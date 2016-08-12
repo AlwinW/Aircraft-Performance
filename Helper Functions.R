@@ -114,33 +114,32 @@ RaymerClass <-
   data.frame(
     name = c("General Aviation - twin engine", "Twin Turboprop"),
     A = c(1.4, 0.92),
-    C = c(-0.10,-0.05)
+    C = c(-0.10, -0.05)
   )
+
 # Raymer's Equivalent curve fits for We/W0
 RaymerFit <- function(W0, type) {
   coef <- RaymerClass %>% filter_(interp(quote(name == x), x = type))
   return(coef$A * W0 ^ coef$C)
 }
-BatteryFrac <- function(R, g, E, eta, ClCd)
-  (R * g) / (E * eta * ClCd)
+BatteryFrac <-function(R, g, E, eta, ClCd)
+    (R * g) / (E * eta * ClCd)
+PayloadFrac <- function(Wpp, W0)
+  Wpp / W0
 
 # Weight estimation (Actually comes out in kg!!)
-WeightEst <- function(Wpp, R, g, E, eta, ClCd, type, x1, x2, info) {
-  SecantRootUnivariate(function(W0)
-    W0 - Wpp / (1 - BatteryFrac(R, g, E, eta, ClCd) - RaymerFit(W0, type)), x1, x2, info)
-}
-WeightEst(120 * 6, 1000e3, 9.81, 1e6, 0.8, 10, "Twin Turboprop", 10, 5000, info = TRUE)
-
-WeightEstPlot <- function(W0, Wpp, R, g, E, eta, ClCd, type) {
-  W0 - Wpp / (1 - BatteryFrac(R, g, E, eta, ClCd) - RaymerFit(W0, type))
-}
-West = data.frame(W0 = seq(100, 5000, by = 100))
+West = data.frame(W0 = seq(500, 5000, by = 100))
 West <-
   mutate(West,
-         Wb = BatteryFrac(1000e3, 9.81, 1e6, 0.9, 20),
-         We = RaymerFit(W0, "Twin Turboprop"))
+         Wb = BatteryFrac(1000e3, 9.81, 1e6, 0.9, 30),
+         We = RaymerFit(W0, "Twin Turboprop"),
+         Wp = PayloadFrac(720, W0))
 
-ggplot(West) + geom_point(aes(x = W0, y = Wb))  + geom_point(aes(x = W0, y = We)) +
+ggplot(West) +
+  geom_line(aes(x = W0, y = Wb, colour = "Wb")) +
+  geom_line(aes(x = W0, y = We, colour = "We")) +
+  geom_line(aes(x = W0, y = Wp, colour = "Wp")) +
+  geom_line(aes(x = W0, y = Wb + We + Wp)) +
   expand_limits(x = 0, y = 0)
 
 
