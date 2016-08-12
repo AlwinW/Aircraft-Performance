@@ -108,131 +108,44 @@ VmaxP <- function(PA, rho, W, S, Cd0, K, x1, x2, info = FALSE) {
 }
 # VmaxP(3060e3, 1.225, 155e3, 54.4, 0.02, 0.0323, 100, 200)
 
+#---Weight Estimate
+# Dimensional constants
+RaymerClass <-
+  data.frame(
+    name = c("General Aviation - twin engine", "Twin Turboprop"),
+    A = c(1.4, 0.92),
+    C = c(-0.10,-0.05)
+  )
+# Raymer's Equivalent curve fits for We/W0
+RaymerFit <- function(W0, type) {
+  coef <- RaymerClass %>% filter_(interp(quote(name == x), x = type))
+  return(coef$A * W0 ^ coef$C)
+}
+BatteryFrac <- function(R, g, E, eta, ClCd)
+  (R * g) / (E * eta * ClCd)
 
+# Weight estimation (Actually comes out in kg!!)
+WeightEst <- function(Wpp, R, g, E, eta, ClCd, type, x1, x2, info) {
+  SecantRootUnivariate(function(W0)
+    W0 - Wpp / (1 - BatteryFrac(R, g, E, eta, ClCd) - RaymerFit(W0, type)), x1, x2, info)
+}
+WeightEst(120 * 6, 1000e3, 9.81, 1e6, 0.8, 10, "Twin Turboprop", 10, 5000, info = TRUE)
 
-# Dummy power in level flight curve
-nh <- 6
-nv <- 51
-powerthrustcurves  <-
-  data.frame(h = rep(seq(0, 5000, length.out = nh), each = nv),
-             Vinf = rep(seq(40, 120, length.out = nv), times = nh))
-powerthrustcurves <- powerthrustcurves %>%
-  mutate(
-    W = 155e3,
-    S = 54.4,
-    K = 0.0323,
-    Cd0 = 0.02,
-    P0 = 3060e3,
-    Clmax = 1.2
-  ) %>%
-  StandardAtomsphere(.) %>%
-  group_by(h) %>%
-  mutate(
-    qinf = qinf(rho, Vinf),
-    Cl = Cl(W, qinf, S),
-    Cd = Cd(Cd0, K, Cl),
-    ClCd = ClCd(Cl, Cd),
-    ClCdstar = ClCdstar(Cd0, K),
-    Vmin = Vmin(rho, W, S, Clmax),
-    PRmin = PRmin(rho, W, S, Cd0, K),
-    PR = PR(Vinf, rho, W, S, Cd0, K),
-    TRmin = TRmin(W, ClCdstar),
-    TR = TR(W, ClCd),
-    Vstar = Vstar(rho, W, S, K, Cd0),
-    V32 = V32(Vstar),
-    PA = PA(sigma, P0),
-    Pexc = Pexc(PA, PR)
-  ) %>%
-  rowwise() %>%
-  mutate(VmaxP = VmaxP(PA, rho, W, S, Cd0, K, 50, 200))
-# POWER REQUIRED
-ggplot(powerthrustcurves,
-       aes(
-         x = Vinf,
-         y = PR,
-         group = h,
-         colour = as.factor(h)
-       )) +
-  geom_path() +
-  geom_point(aes(x = V32, y = PRmin), shape = 1) +
-  geom_point(aes(x = Vstar, y = TRmin * Vstar), shape = 2) +
-  expand_limits(x = 0, y = 0)
-# THRUST REQUIRED
-ggplot(powerthrustcurves,
-       aes(
-         x = Vinf,
-         y = TR,
-         group = h,
-         colour = as.factor(h)
-       )) +
-  geom_path() +
-  geom_point(aes(x = V32, y = PRmin / V32), shape = 1) +
-  geom_point(aes(x = Vstar, y = TRmin), shape = 2) +
-  expand_limits(x = 0, y = 0)
-# POWER EXCESS
-ggplot(powerthrustcurves,
-       aes(
-         x = Vinf,
-         y = Pexc,
-         group = h,
-         colour = as.factor(h)
-       )) +
-  geom_path() +
-  geom_point(aes(x = V32, y = PA - PRmin), shape = 1) +
-  geom_point(aes(x = Vstar, y = PA - TRmin * Vstar), shape = 2) +
+WeightEstPlot <- function(W0, Wpp, R, g, E, eta, ClCd, type) {
+  W0 - Wpp / (1 - BatteryFrac(R, g, E, eta, ClCd) - RaymerFit(W0, type))
+}
+West = data.frame(W0 = seq(100, 5000, by = 100))
+West <-
+  mutate(West,
+         Wb = BatteryFrac(1000e3, 9.81, 1e6, 0.9, 20),
+         We = RaymerFit(W0, "Twin Turboprop"))
+
+ggplot(West) + geom_point(aes(x = W0, y = Wb))  + geom_point(aes(x = W0, y = We)) +
   expand_limits(x = 0, y = 0)
 
-# Operating Window
-nh <- 51
-nv <- 51
-operatingwindow  <-
-  data.frame(h = rep(seq(0, 12500, length.out = nh), each = nv),
-             Vinf = rep(seq(0, 200, length.out = nv), times = nh))
-operatingwindow <- operatingwindow %>%
-  mutate(
-    W = 155e3,
-    S = 54.4,
-    K = 0.0323,
-    Cd0 = 0.02,
-    P0 = 3060e3,
-    Clmax = 1.2
-  ) %>%
-  StandardAtomsphere(.) %>%
-  group_by(h) %>%
-  mutate(
-    qinf = qinf(rho, Vinf),
-    Cl = Cl(W, qinf, S),
-    Cd = Cd(Cd0, K, Cl),
-    ClCd = ClCd(Cl, Cd),
-    ClCdstar = ClCdstar(Cd0, K),
-    Vmin = Vmin(rho, W, S, Clmax),
-    PRmin = PRmin(rho, W, S, Cd0, K),
-    PR = PR(Vinf, rho, W, S, Cd0, K),
-    TRmin = TRmin(W, ClCdstar),
-    TR = TR(W, ClCd),
-    Vstar = Vstar(rho, W, S, K, Cd0),
-    V32 = V32(Vstar),
-    PA = PA(sigma, P0),
-    Pexc = Pexc(PA, PR)
-  ) %>%
-  rowwise() %>%
-  mutate(VmaxP = VmaxP(PA, rho, W, S, Cd0, K, 1, 250))
 
-# Velocities
-ggplot(operatingwindow) +
-  geom_path(aes(x = Vmin, y = h, colour = "Stall Speed")) +
-  geom_path(aes(x = Vmin * 1.2, y = h, colour = "Safety Factor")) +
-  geom_path(aes(x = VmaxP, y = h, colour = "Maximum Speed")) +
-  scale_color_manual(values=c("Stall Speed"="red", "Safety Factor"="orange",
-                              "Maximum Speed"="purple"))
-# Excess Power
-ggplot(operatingwindow) +
-  geom_point(data=filter(operatingwindow,Pexc>=0), aes(x=Vinf, y=h, colour=Pexc)) +
-  geom_path(aes(x = Vmin, y = h), colour = "red") +
-  geom_path(aes(x = Vmin * 1.2, y = h), colour = "orange") +
-  geom_path(aes(x = VmaxP, y = h), colour = "purple") +
-  scale_colour_gradientn(colours = brewer.pal(5, "RdYlGn"),
-                       guide = "colourbar",
-                       name = "Excess Power")
+
+plot(W0,
+     WeightEstPlot(W0, 120 * 6, 1000e3, 9.81, 1e6, 0.8, 20, "Twin Turboprop"))
 
 #---Use the previous functions to mutate a dataframe
