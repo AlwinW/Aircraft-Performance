@@ -41,6 +41,9 @@ shinyServer(function(input, output,session) {
   observe({
     # Calculate required inputs
     if (!is.na(input$S) & !is.na(input$b)) updateNumericInput(session, "AR", value = input$b^2/input$S)
+    if (!is.na(input$e) & !is.na(input$AR)) updateNumericInput(session, "K", value = 1/(pi * input$AR * input$e))
+    if (!is.na(input$m)) updateNumericInput(session, "W", value = input$m * 9.8065)
+    if (!is.na(input$W) & !is.na(input$S)) updateNumericInput(session, "WS", value = input$W/input$S)
     inputvals <- data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
                         Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
                         m = input$m, W = input$W, WS = input$WS,
@@ -50,6 +53,8 @@ shinyServer(function(input, output,session) {
     # Use cbind to combine into a dataframe
   })
 
+  input <- data.frame(S = 54.4, b = 25.90, AR = 12.33, e = 0.8, K = 0.0323, Cd0 = 0.02, Clmax = 1.2, Clflaps = 0.80, Clhls = 1.20,
+                      m = 15806, W = 155000, WS = 2850, P0eng = 1530000, P0 = 306000)
   
   # output$distPlot <- renderPlot({
   # 
