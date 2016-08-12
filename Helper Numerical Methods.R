@@ -4,7 +4,7 @@
 
 #---Secant Root Finding Method
 
-SecantRootUnivariate <- function(func, x1, x2) {
+SecantRootUnivariate <- function(func, x1, x2, info = FALSE) {
   # reduce number of function calls by storing results as vars
   fx1 <-  func(x1); fx2 <- func(x2)
   fxr <- 10; loop = 1
@@ -18,5 +18,9 @@ SecantRootUnivariate <- function(func, x1, x2) {
     }
     loop <- loop + 1
   }
-  return(xr)
+  if (info == TRUE) {
+    return(c(xr, fxr, loop))
+  } else {
+    return(xr)
+  }
 }
