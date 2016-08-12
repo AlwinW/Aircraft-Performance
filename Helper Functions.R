@@ -68,12 +68,33 @@ TA <- function(PA, Vinf) PA / Vinf
 Texc <- function(TA, TR) TA - TR
 
 #---Maximum speed @ altitude
-Vmax <- function(PA, rho, W, S, Cd0, K, x1, x2) {
-  SecantRootUnivariate(function(Vinf) PA - W * sqrt(2/rho * W/S *
-                                              (Cd0 + K*(2/rho*W/S*1/(Vinf^2))^2)^2/((2/rho*W/S*1/(Vinf^2))^3)), x1, x2)
+VmaxP <- function(Vinf, PA, rho, W, S, Cd0, K) {
+  Cl <- 2 / rho * W / S * 1 / (Vinf ^ 2)
+  Cd <- Cd0 + K * Cl ^ 2
+  PR <- W * sqrt(2 / rho * W / S * Cd ^ 2 / Cl ^ 3)
+  Pexc <- PA - PR
+  return(Pexc)
 }
 
-Vmax(3060e3, 1.225, 155e3, 54.4, 0.02, 0.323, 100, 200)
+Vmax <- function(PA, rho, W, S, Cd0, K, x1, x2) {
+  Pexc <- 10
+  loop <- 1
+  while (abs(Pexc) > 0.00001 & loop < 100) {
+    PR <- VmaxP(x1, )
+
+
+
+    loop <- loop + 1
+  }
+}
+
+VmaxP(100, 3060e3, 1.225, 155e3, 54.4, 0.02, 0.0323)
+
+Vmax <- function(PA, rho, W, S, Cd0, K, x1, x2) {
+  SecantRootUnivariate(function(Vinf) PA - W * sqrt(2/rho * W/S *
+                                         (Cd0 + K*(2/rho*W/S*1/(Vinf^2))^2)^2/((2/rho*W/S*1/(Vinf^2))^3)), x1, x2)
+}
+Vmax(3060e3, 1.225, 155e3, 54.4, 0.02, 0.0323, 100, 200)
 
 # Dummy power in level flight curve
 nh <- 6; nv <- 51
