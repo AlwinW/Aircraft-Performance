@@ -19,47 +19,28 @@ standatomconst <- data.frame(
 
 StandardAtomsphere <- function(data) {
   # Give the data an ID so we can sort it later
-  data$ID <- seq.int(nrow(data))
-  out <- data %>%
-    select(ID, h) %>%
+  data <- data %>%
     cbind(., standatomconst) %>%
+    rowwise() %>%
     mutate(
-      T = if(h <= hc) {T0 - dTdh * h} else {},
-      theta = if(h <= hc) {T / T0} else {},
-      delta =  if(h <= hc) {theta ^ 5.256} else {},
-      sigma = if(h <= hc) {theta ^ 4.256} else {},
-      p = if(h <= hc) {p0 * delta} else {},
-      rho = if(h <= hc) {rho * sigma} else {}
-    )
-
-  
-  if (standatomconst$h <= standatomconst$hc) {
-    standatomconst <-  mutate(
-      standatomconst,
-      T = T0 - dTdh * h,
-      theta = T / T0,
-      delta =  theta ^ 5.256,
-      sigma = theta ^ 4.256,
+      T = if(h <= hc) {T0 - dTdh * h} else {Tc},
+      theta = if(h <= hc) {T / T0} else {T / T0},
+      delta =  if(h <= hc) {theta ^ 5.256} else {deltac * exp(-goRTc * (h - hc))},
+      sigma = if(h <= hc) {theta ^ 4.256} else {delta / thetac},
       p = p0 * delta,
-      rho = rho * sigma
-    )
-  } else {
-    standatomconst <-  mutate(
-      standatomconst,
-      T = Tc,
-      theta = T / T0,
-      delta = deltac * exp(-goRTc * (h - hc)),
-      sigma = delta / thetac,
-      p = p0 * delta
-    )
-  }
-  standatomconst <- standatomconst %>%
-    mutate(p = p0 * delta,
-           rho = rho0 * sigma,
-           a = a0 * sqrt(theta)) %>%
-    select(T, p, rho, a, sigma)
+      rho = rho0 * sigma,
+      a = a0 * sqrt(theta),
+      g = (rearth/(rearth+h))^2 * g0) %>%
+    select(-hc, -dTdh, -Tc, -deltac, -goRTc, -thetac, -rearth, - theta, -delta)
+  return(as.data.frame(data))
 }
-
 # #---Test
-h <- data.frame(h = seq(0, 20000, by = 1000))
-# h %>% rowwise() %>% do(sa = StandardAtomsphere(h))
+# h <- data.frame(h = seq(0, 20000, by = 1000))
+# h$dummy1 <- 1
+# h$dummy2 <- 2
+# # Remove "-theta, - delta" to work
+# h <- StandardAtomsphere(h)
+# ggplot(data=h) +
+#   geom_path(aes(x=h, y=theta), colour = "blue") +
+#   geom_path(aes(x=h, y=delta), colour = "red") +
+#   geom_path(aes(x=h, y=sigma), colour = "yellow")
