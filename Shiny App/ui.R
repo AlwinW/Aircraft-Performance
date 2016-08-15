@@ -39,7 +39,13 @@ shinyUI(fluidPage(
         tabPanel("Specifications",
                  tableOutput("specs")),
         tabPanel("Aerodynamic Properties",
-                 tableOutput("input")),
+                 h3("Sea Level"),
+                 tableOutput("AeroSea"),
+                 h3("Cruise"),
+                 tableOutput("AeroCruise"),
+                 h3("Ceiling"),
+                 tableOutput("AeroCeil")
+                 ),
         tabPanel("Plot", plotOutput("distPlot")),
         tabPanel("Summary", verbatimTextOutput("summary")),
         tabPanel("Table", tableOutput("table"))
@@ -47,3 +53,6 @@ shinyUI(fluidPage(
     )
   )
 ))
+
+
+# runApp(, display.mode = "showcase")
