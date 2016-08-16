@@ -303,6 +303,57 @@ shinyServer(function(input, output,session) {
 
   
   
+  #---Climb
+  observe({
+    inputvals <- data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
+                            Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
+                            m = input$m, W = input$W, WS = input$WS,
+                            P0eng = input$P0eng, P0 = input$P0)
+    # 2nd Segment
+    climbsegtwo <- inputvals
+    climbsegtwo$h = 400*0.3
+    climbsegtwo <- StandardAtomsphere(climbsegtwo)
+    climb_Vmin <- Vmin(climbsegtwo$rho, climbsegtwo$W, climbsegtwo$S, climbsegtwo$Clmax)
+    
+    climbsegtwo <- cbind(climbsegtwo, Vinf = seq(climb_Vmin, 150,length.out = 51))
+    
+    climbsegtwo <- climbsegtwo %>%
+      mutate(qinf = qinf(rho, Vinf),
+             Cl = Cl(W, qinf, S),
+             Cd = Cd(Cd0, K, Cl),
+             D = D(qinf, S, Cd),
+             PA = PA(sigma, P0),
+             TA = TA(PA, Vinf),
+             sint = (TA - D)/W,
+             theta = asin(sint) * 180/pi,
+             percentagegradient = sint*100
+             )
+    
+    ggplot(climbsegtwo, aes(x=Vinf, y=percentagegradient)) + geom_path() + geom_hline(yintercept = 1.5)
+    
+    climb <- inputvals
+    climb <- cbind(climb, 
+                   h = rep(c(0, 120, 3000, 3600), each=51), 
+                   Vinf = rep(seq(climb_Vmin*0.9, 150, length.out = 51),times=4))
+    climb <- climb %>%
+      StandardAtomsphere(.) %>%
+      mutate(qinf = qinf(rho, Vinf),
+             Cl = Cl(W, qinf, S),
+             Cd = Cd(Cd0, K, Cl),
+             D = D(qinf, S, Cd),
+             Vmin = Vmin(rho, W, S, Clmax),
+             Vstar = Vstar(rho, W, S, K, Cd0),
+             PA = PA(sigma, P0),
+             TA = TA(PA, Vinf),
+             ClimbRate = (PA - D*Vinf)/W
+             ) %>%
+      mutate(h = as.factor(h))
+    
+    ggplot(climb, aes(x=Vinf, y = ClimbRate / 0.3 * 60, group = h, colour = h)) + geom_path() +
+      geom_point(aes(x=Vstar*0.76, y = 1000)) +
+      geom_point(aes(x=Vmin*1.2, y = 1000), shape = 2)
+    })
+
   
   
   # # Uncomment ONLYL for debugging - otherwise, the app will no longer be reactive
