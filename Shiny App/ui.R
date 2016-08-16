@@ -36,15 +36,48 @@ shinyUI(fluidPage(
     mainPanel(
       tabsetPanel(
         position = "above",
+        #---Specifications
         tabPanel("Specifications",
                  tableOutput("specs")),
+        
+        #---Aerodyanmic Properties
         tabPanel("Aerodynamic Properties",
-                 h3("Sea Level"),
-                 tableOutput("AeroSea"),
-                 h3("Cruise"),
-                 tableOutput("AeroCruise"),
-                 h3("Ceiling"),
-                 tableOutput("AeroCeil")
+                 h3("Various Altitudes"),
+                 tableOutput("AeroParamsTable"),
+                 h3("Drag Polar"),
+                 plotOutput("AeroParamsPlot", click = "APP_click", dblclick = "APP_dblclick",
+                            hover = "APP_hover", brush = "APP_brush"),
+                 verbatimTextOutput("APP_info")
+                 ),
+        
+        #---Operating Window
+        tabPanel("Operating Window",
+                 column(6,numericInput("OW_nh","Number of Height Curves", 51),
+                        numericInput("OW_maxh", "Maximum Height", 12500)),
+                 column(6,numericInput("OW_nv","Number of Velocity Points", 51),
+                        numericInput("OW_maxv", "Maximum Velocity", 200)),
+                 "Things can get quite wacky. Play around with the maximum height unitl it works",
+                 plotOutput("OWV_plot", click = "OWV_click", dblclick = "OWV_dblclick",
+                            hover = "OWV_hover", brush = "OWV_brush"),
+                 verbatimTextOutput("OWV_info"),
+                 plotOutput("OWP_plot", click = "OWP_click", dblclick = "OWP_dblclick",
+                            hover = "OWP_hover", brush = "OWP_brush"),
+                 verbatimTextOutput("OWP_info")
+                 ),
+        
+        #---Power and Thrust Curves
+        tabPanel("Power & Thrust",
+                 column(6,numericInput("PT_nh","Number of Height Curves", 11)),
+                 column(6,numericInput("PT_nv","Number of Velocity Points", 51)),
+                 "Legend: Cirlces indicate lowest power and triangles indicate lowest thrust",
+                 plotOutput("PR_plot", click = "PR_click", hover = "PR_hover"),
+                 verbatimTextOutput("PR_info"),
+                 plotOutput("TR_plot", click = "TR_click", hover = "TR_hover"),
+                 verbatimTextOutput("TR_info"),
+                 plotOutput("Pe_plot", click = "Pe_click", hover = "Pe_hover"),
+                 verbatimTextOutput("Pe_info"),
+                 plotOutput("Te_plot", click = "Te_click", hover = "Te_hover"),
+                 verbatimTextOutput("Te_info")
                  ),
         tabPanel("Plot", plotOutput("distPlot")),
         tabPanel("Summary", verbatimTextOutput("summary")),
