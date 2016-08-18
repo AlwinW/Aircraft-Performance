@@ -53,6 +53,45 @@ shinyServer(function(input, output,session) {
               M, 1000, -1.5, 3.5))
   output$specs <- renderTable(Specifications)
   
+  observe({
+    output$downloadData <- downloadHandler(
+      filename = function() {
+        paste(date(), ".csv", sep = "")
+      },
+      content = function(file) {
+        write.csv(inputvals, file)
+      }
+    )
+  })
+  
+  # This function is repsonsible for loading in the selected file
+  inputvarsdata <- reactive({
+    infile <- input$uploadData
+    if (is.null(infile)) {
+      return(NULL)
+    }
+    else {
+      read.csv(infile$datapath)
+    }
+    # output$specs <- renderTable(inputvalsdata)
+  })
+  
+  observe({
+    df <- inputvarsdata()
+    if (is.null(df)) return(NULL)
+    
+    output$testout <- renderText(df$AR)
+  })
+  
+
+  
+  
+  
+  # updateNumericInput(session, "AR", value = inputvarsdata$AR)
+  
+  
+  
+  
   #---Inputs
   observe({
     # Calculate required inputs
@@ -72,7 +111,7 @@ shinyServer(function(input, output,session) {
                         m = input$m, W = input$W, WS = input$WS,
                         P0eng = input$P0eng, P0 = input$P0
                         )
-    output$input <- renderTable(inputvals)
+    
     # Use cbind to combine into a dataframe
   })
 

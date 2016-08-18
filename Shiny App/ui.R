@@ -8,6 +8,11 @@ shinyUI(fluidPage(
   # Sidebar for inputs
   sidebarLayout(
     sidebarPanel(
+      fileInput("uploadData", "Upload Inputs",
+                accept="csv"),
+      downloadButton("downloadData", "Download Inputs"),
+      verbatimTextOutput("testout"),
+      
       #
       h3("Wing Parameters"),
       numericInput("S", "Wing Area (m^2)", 54.4),
