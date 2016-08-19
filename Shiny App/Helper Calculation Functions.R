@@ -214,12 +214,12 @@ ClimbRates <- function(inputvals, heights) {
                     seq(.$Vflaps, .$Vmin, length.out = 3),
                     seq(.$Vmin, .$Vmin * 1.2, length.out = 5),
                     seq(.$Vmin * 1.2, .$Vcruise, length.out = 5),
-                    seq(.$Vcruise, .$Vcruise * 2, length.out = 10)),
+                    seq(.$Vcruise, .$Vcruise * 2, length.out = 20)),
                   Vname = c(
                     "Vflaps", rep("Vinf", 1), "Vstall",
                     "Vstall", rep("Vinf", 3),"Vsafe",
                     "Vsafe", rep("Vinf", 3), "Vcruise",
-                    "Vcruise", rep("Vinf", 9))
+                    "Vcruise", rep("Vinf", 19))
                   )) %>%
     arrange(h, Vinf) %>%
     distinct(.keep_all = TRUE) %>%

@@ -11,8 +11,6 @@ shinyUI(fluidPage(
       fileInput("uploadData", "Upload Inputs",
                 accept="csv"),
       downloadButton("downloadData", "Download Inputs"),
-      verbatimTextOutput("testout"),
-      
       #
       h3("Wing Parameters"),
       numericInput("S", "Wing Area (m^2)", 54.4),
@@ -90,7 +88,10 @@ shinyUI(fluidPage(
                  plotOutput("TR_plot", click = "TR_click", hover = "TR_hover"),
                  verbatimTextOutput("TR_info")
                  ),
-        tabPanel("Climb", plotOutput("distPlot")),
+        tabPanel("Climb",
+                 plotOutput("PG_plot", click = "PG_click", hover = "PG_hover"),
+                 plotOutput("CR_plot", click = "CR_click", hover = "PG_hover"),
+                 plotOutput("CRa_plot", click = "CRa_click", hover = "PG_hover")),
         tabPanel("Summary", verbatimTextOutput("summary")),
         tabPanel("Table", tableOutput("table"))
       )

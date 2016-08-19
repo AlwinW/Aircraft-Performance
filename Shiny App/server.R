@@ -47,13 +47,19 @@ shinyServer(function(input, output,session) {
       "Load Factor Maximum"
     ),
     value = c(120*6, Wp, E, 2750, 2750e6,
-              1000, 35, 100, 100, 1.5, 300, 10000, 12000,
+              1000, 35, 100, 1.5, 300, 100, 10000, 12000,
               M, 1000, -1.5, 3.5))
   # Output the specifications as a table (this is not updated ever)
   output$specs <- renderTable(Specifications)
   
 ## Download Input Data ======================================================================
   observe({
+    # Get updated inputvals (reactive)
+    inputvals <- data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
+                            Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
+                            m = input$m, W = input$W, WS = input$WS,
+                            P0eng = input$P0eng, P0 = input$P0
+    )
     # Use the download handler in the UI
     output$downloadData <- downloadHandler(
       # Provide a filename of the data to be downloaded
@@ -120,6 +126,7 @@ shinyServer(function(input, output,session) {
                         P0eng = input$P0eng, P0 = input$P0
                         )
   })
+  
 ## Aerodynmic Properties Table ======================================================================
   observe({
     # Get updated inputvals (reactive)
@@ -318,23 +325,11 @@ shinyServer(function(input, output,session) {
     # Climb in general
     heights <- data.frame(type = c("Sea Level", "2nd Seg Climb", "3rd Seg Accel", "Cruise", "Ceiling"),
                           h = c(0, 35*0.3, 400*0.3, h_cruise, h_ceil))
-    
     climb <- ClimbRates(inputvals, heights)
     
+    # Graph of Percentage Gradients
+    output$PG_plot <- renderPlot({
       ggplot(climb, aes(x=Vinf, y=PercentageGradient, group = type, colour = type)) + 
-        geom_path() + 
-        geom_point(data = filter(climb, Vname == "Vstall"), shape = 3,
-                   aes(x=Vinf, y=PercentageGradient, group = type, colour = type)) + 
-        geom_point(data = filter(climb, Vname == "Vsafe"), shape = 2,
-                   aes(x=Vinf, y=PercentageGradient, group = type, colour = type)) + 
-        geom_point(data = filter(climb, Vname == "Vcruise"), shape = 1,
-                   aes(x=Vinf, y=PercentageGradient, group = type, colour = type)) + 
-        geom_hline(aes(yintercept = 1.5, colour = "2nd Seg Climb")) +
-        geom_text(aes(x = 80, y = 1.5, colour = "2nd Seg Climb"), 
-                  label = "Minimum 2nd Seg Climb", hjust = 0, vjust = -0.5,
-                  show.legend = FALSE)
- 
-      ggplot(climb, aes(x=Vinf, y=PercentageGradient, group = type, colour = type, fill = type)) + 
         geom_path() + 
         geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
         geom_hline(aes(yintercept = 1.5, colour = "2nd Seg Climb")) +
@@ -342,29 +337,43 @@ shinyServer(function(input, output,session) {
                   label = "Minimum 2nd Seg Climb", hjust = 0, vjust = -0.5,
                   show.legend = FALSE) + 
         scale_size(range = c(0,3)) + 
-        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 5, "Vinf" = 1, "Vsafe" = 3, "Vstall" = 2)) +
+        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
         guides(size = FALSE)
-      
-      
-    
-      ggplot(climb, aes(x=Vinf, y=ClimbRate / 0.3 * 60, group = type, colour = type)) + 
-        geom_path() + 
-        geom_point(data = filter(climb, Vname == "Vstall"), shape = 3,
-                   aes(x=Vinf, y=ClimbRate / 0.3 * 60, group = type, colour = type)) + 
-        geom_point(data = filter(climb, Vname == "Vsafe"), shape = 2,
-                   aes(x=Vinf, y=ClimbRate / 0.3 * 60, group = type, colour = type)) + 
-        geom_point(data = filter(climb, Vname == "Vcruise"), shape = 1,
-                   aes(x=Vinf, y=ClimbRate / 0.3 * 60, group = type, colour = type)) + 
-        geom_text(aes(x = 80, y = 1.5, colour = "2nd Seg Climb"), 
-                  label = "Minimum 2nd Seg Climb", hjust = 0, vjust = -0.5,
-                  show.legend = FALSE)
-      
-    ggplot(climb, aes(x=Vinf, y = ClimbRate / 0.3 * 60, group = type, colour = type)) + geom_path() 
-    
-    +
-      geom_point(aes(x=Vstar*0.76, y = 1000)) +
-      geom_point(aes(x=Vmin*1.2, y = 1000), shape = 2)
     })
+      
+    # Graph of Climb Rates in ft per minute
+    output$CR_plot <- renderPlot({
+      ggplot(climb, aes(x=Vinf, ClimbRate / 0.3 * 60, group = type, colour = type)) + 
+        geom_path() + 
+        geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
+        geom_hline(aes(yintercept = 100, colour = "Ceiling")) +
+        geom_text(aes(x = 80, y = 100, colour = "Ceiling"), 
+                  label = "Minimum Ceiling Rate of Climb", hjust = 0, vjust = -0.5,
+                  show.legend = FALSE) + 
+        geom_hline(aes(yintercept = 300, colour = "Cruise")) +
+        geom_text(aes(x = 80, y = 300, colour = "Cruise"), 
+                  label = "Minimum Cruise Rate of Climb", hjust = 0, vjust = -0.5,
+                  show.legend = FALSE) + 
+        scale_size(range = c(0,3)) + 
+        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
+        guides(size = FALSE)
+    })
+    
+    # Climb in general
+    heightsall <- data.frame(type = as.factor(seq(0, 4000, 250)),
+                             h = seq(0, 4000, 250))
+    climball <- ClimbRates(inputvals, heightsall)
+      
+    # Graph of Climb Rates in ft per minute
+    output$CRa_plot <- renderPlot({
+      ggplot(climball, aes(x=Vinf, ClimbRate / 0.3 * 60, group = type, colour = type)) + 
+        geom_path() + 
+        geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
+        scale_size(range = c(0,3)) + 
+        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
+        guides(size = FALSE)
+    })
+  })
 
   
   
