@@ -192,7 +192,48 @@ ThrustPowerCurves <- function(input, minh, maxh, nh, minv, maxv, nv, VmaxP1, Vma
       Texc = Texc(TA, TR)
     ) %>%
     rowwise() %>%
-    mutate(VmaxP = VmaxP(PA, rho, W, S, Cd0, K, VmaxP1, VmaxP2))
+    mutate(VmaxP = VmaxP(PA, rho, W, S, Cd0, K, VmaxP1, VmaxP2)) %>%
+    ungroup()
 }
 
-
+## Climb  ======================================================================
+ClimbRates <- function(inputvals, heights) {
+  # Add in the various interested heights
+  out <- data.frame(sapply(inputvals, rep.int, times = nrow(heights)))
+  out$type <- heights$type
+  out$h <- heights$h
+  # Add in the standard atmosphere values
+  out <- StandardAtomsphere(out) %>%
+    mutate(
+      Vflaps = Vmin(rho, W, S, Clmax + Clflaps),
+      Vmin = Vmin(rho, W, S, Clmax), 
+      Vcruise = M*a) %>%
+    rowwise() %>%
+    do(data.frame(.,
+                  Vinf = c(
+                    seq(.$Vflaps, .$Vmin, length.out = 3),
+                    seq(.$Vmin, .$Vmin * 1.2, length.out = 5),
+                    seq(.$Vmin * 1.2, .$Vcruise, length.out = 5),
+                    seq(.$Vcruise, .$Vcruise * 2, length.out = 10)),
+                  Vname = c(
+                    "Vflaps", rep("Vinf", 1), "Vstall",
+                    "Vstall", rep("Vinf", 3),"Vsafe",
+                    "Vsafe", rep("Vinf", 3), "Vcruise",
+                    "Vcruise", rep("Vinf", 9))
+                  )) %>%
+    arrange(h, Vinf) %>%
+    distinct(.keep_all = TRUE) %>%
+    select(-Vmin,-Vcruise) %>%
+    mutate(qinf = qinf(rho, Vinf),
+           Cl = Cl(W, qinf, S),
+           Cd = Cd(Cd0, K, Cl),
+           D = D(qinf, S, Cd),
+           PA = PA(sigma, P0),
+           TA = TA(PA, Vinf),
+           SinTheta = (TA - D)/W,
+           Theta = asin(SinTheta) * 180/pi,
+           PercentageGradient = SinTheta*100,
+           ClimbRate = (PA - D*Vinf)/W
+    ) %>%
+    group_by(type)
+}

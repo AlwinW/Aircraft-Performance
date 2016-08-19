@@ -1,4 +1,5 @@
 #---NOTE: Ctrl + Shift + S runs the app
+#---NOTE: make conversions from m to ft more accurate
 
 ## Initialisation ======================================================================
 #--- Load required libraries
@@ -313,47 +314,54 @@ shinyServer(function(input, output,session) {
                             Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
                             m = input$m, W = input$W, WS = input$WS,
                             P0eng = input$P0eng, P0 = input$P0)
-    # 2nd Segment
-    climbsegtwo <- inputvals
-    climbsegtwo$h = 400*0.3
-    climbsegtwo <- StandardAtomsphere(climbsegtwo)
-    climb_Vmin <- Vmin(climbsegtwo$rho, climbsegtwo$W, climbsegtwo$S, climbsegtwo$Clmax)
     
-    climbsegtwo <- cbind(climbsegtwo, Vinf = seq(climb_Vmin, 150,length.out = 51))
+    # Climb in general
+    heights <- data.frame(type = c("Sea Level", "2nd Seg Climb", "3rd Seg Accel", "Cruise", "Ceiling"),
+                          h = c(0, 35*0.3, 400*0.3, h_cruise, h_ceil))
     
-    climbsegtwo <- climbsegtwo %>%
-      mutate(qinf = qinf(rho, Vinf),
-             Cl = Cl(W, qinf, S),
-             Cd = Cd(Cd0, K, Cl),
-             D = D(qinf, S, Cd),
-             PA = PA(sigma, P0),
-             TA = TA(PA, Vinf),
-             sint = (TA - D)/W,
-             theta = asin(sint) * 180/pi,
-             percentagegradient = sint*100
-             )
+    climb <- ClimbRates(inputvals, heights)
     
-    ggplot(climbsegtwo, aes(x=Vinf, y=percentagegradient)) + geom_path() + geom_hline(yintercept = 1.5)
+      ggplot(climb, aes(x=Vinf, y=PercentageGradient, group = type, colour = type)) + 
+        geom_path() + 
+        geom_point(data = filter(climb, Vname == "Vstall"), shape = 3,
+                   aes(x=Vinf, y=PercentageGradient, group = type, colour = type)) + 
+        geom_point(data = filter(climb, Vname == "Vsafe"), shape = 2,
+                   aes(x=Vinf, y=PercentageGradient, group = type, colour = type)) + 
+        geom_point(data = filter(climb, Vname == "Vcruise"), shape = 1,
+                   aes(x=Vinf, y=PercentageGradient, group = type, colour = type)) + 
+        geom_hline(aes(yintercept = 1.5, colour = "2nd Seg Climb")) +
+        geom_text(aes(x = 80, y = 1.5, colour = "2nd Seg Climb"), 
+                  label = "Minimum 2nd Seg Climb", hjust = 0, vjust = -0.5,
+                  show.legend = FALSE)
+ 
+      ggplot(climb, aes(x=Vinf, y=PercentageGradient, group = type, colour = type, fill = type)) + 
+        geom_path() + 
+        geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
+        geom_hline(aes(yintercept = 1.5, colour = "2nd Seg Climb")) +
+        geom_text(aes(x = 80, y = 1.5, colour = "2nd Seg Climb"), 
+                  label = "Minimum 2nd Seg Climb", hjust = 0, vjust = -0.5,
+                  show.legend = FALSE) + 
+        scale_size(range = c(0,3)) + 
+        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 5, "Vinf" = 1, "Vsafe" = 3, "Vstall" = 2)) +
+        guides(size = FALSE)
+      
+      
     
-    climb <- inputvals
-    climb <- cbind(climb, 
-                   h = rep(c(0, 120, 3000, 3600), each=51), 
-                   Vinf = rep(seq(climb_Vmin*0.9, 150, length.out = 51),times=4))
-    climb <- climb %>%
-      StandardAtomsphere(.) %>%
-      mutate(qinf = qinf(rho, Vinf),
-             Cl = Cl(W, qinf, S),
-             Cd = Cd(Cd0, K, Cl),
-             D = D(qinf, S, Cd),
-             Vmin = Vmin(rho, W, S, Clmax),
-             Vstar = Vstar(rho, W, S, K, Cd0),
-             PA = PA(sigma, P0),
-             TA = TA(PA, Vinf),
-             ClimbRate = (PA - D*Vinf)/W
-             ) %>%
-      mutate(h = as.factor(h))
+      ggplot(climb, aes(x=Vinf, y=ClimbRate / 0.3 * 60, group = type, colour = type)) + 
+        geom_path() + 
+        geom_point(data = filter(climb, Vname == "Vstall"), shape = 3,
+                   aes(x=Vinf, y=ClimbRate / 0.3 * 60, group = type, colour = type)) + 
+        geom_point(data = filter(climb, Vname == "Vsafe"), shape = 2,
+                   aes(x=Vinf, y=ClimbRate / 0.3 * 60, group = type, colour = type)) + 
+        geom_point(data = filter(climb, Vname == "Vcruise"), shape = 1,
+                   aes(x=Vinf, y=ClimbRate / 0.3 * 60, group = type, colour = type)) + 
+        geom_text(aes(x = 80, y = 1.5, colour = "2nd Seg Climb"), 
+                  label = "Minimum 2nd Seg Climb", hjust = 0, vjust = -0.5,
+                  show.legend = FALSE)
+      
+    ggplot(climb, aes(x=Vinf, y = ClimbRate / 0.3 * 60, group = type, colour = type)) + geom_path() 
     
-    ggplot(climb, aes(x=Vinf, y = ClimbRate / 0.3 * 60, group = h, colour = h)) + geom_path() +
+    +
       geom_point(aes(x=Vstar*0.76, y = 1000)) +
       geom_point(aes(x=Vmin*1.2, y = 1000), shape = 2)
     })

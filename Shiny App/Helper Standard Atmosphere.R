@@ -31,6 +31,7 @@ StandardAtomsphere <- function(data) {
       rho = rho_sl * sigma,
       a = a_sl * sqrt(theta),
       g = (rearth/(rearth+h))^2 * g_sl) %>%
-    select(-hc, -dTdh, -Tc, -deltac, -goRTc, -thetac, -rearth, - theta, -delta)
+    select(-hc, -dTdh, -Tc, -deltac, -goRTc, -thetac, -rearth, - theta, -delta) %>%
+    ungroup()
   return(as.data.frame(data))
 }

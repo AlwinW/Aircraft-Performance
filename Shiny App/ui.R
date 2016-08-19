@@ -23,7 +23,7 @@ shinyUI(fluidPage(
       #
       h3("Aerodynamic Parameters"),
       numericInput("Cd0", "Zero Lift Coefficient of Drag", 0.02),
-      numericInput("Clmax", "Maximum Clean Coefficient of Lift", 1.2),
+      numericInput("Clmax", "Maximum Clean Coefficient of Lift", 1.5),
       numericInput("Clflaps", "Additional Lift from Flaps (added to Clmax)", 0.8),
       numericInput("Clhls", "Additional Lift from High Lift System (added to Clmax)", 1.2),
       #
@@ -90,7 +90,7 @@ shinyUI(fluidPage(
                  plotOutput("TR_plot", click = "TR_click", hover = "TR_hover"),
                  verbatimTextOutput("TR_info")
                  ),
-        tabPanel("Plot", plotOutput("distPlot")),
+        tabPanel("Climb", plotOutput("distPlot")),
         tabPanel("Summary", verbatimTextOutput("summary")),
         tabPanel("Table", tableOutput("table"))
       )
