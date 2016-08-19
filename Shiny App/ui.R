@@ -37,7 +37,7 @@ shinyUI(fluidPage(
       numericInput("P0","Total Static Power (autocalculated x2 Engine Power) (W)", 3.06e6)
     ),
     
-    # Show a plot of the generated distribution
+    # Show a plot of the generated distributions
     mainPanel(
       tabsetPanel(
         position = "above",
@@ -58,7 +58,7 @@ shinyUI(fluidPage(
         #---Operating Window
         tabPanel("Operating Window",
                  column(6,numericInput("OW_nh","Number of Height Curves", 51),
-                        numericInput("OW_maxh", "Maximum Height", 12500)),
+                        numericInput("OW_maxh", "Maximum Height (m)", 12500)),
                  column(6,numericInput("OW_nv","Number of Velocity Points", 51),
                         numericInput("OW_maxv", "Maximum Velocity", 200)),
                  "Things can get quite wacky. Play around with the maximum height unitl it works",
@@ -72,17 +72,23 @@ shinyUI(fluidPage(
         
         #---Power and Thrust Curves
         tabPanel("Power & Thrust",
-                 column(6,numericInput("PT_nh","Number of Height Curves", 11)),
-                 column(6,numericInput("PT_nv","Number of Velocity Points", 51)),
-                 "Legend: Cirlces indicate lowest power and triangles indicate lowest thrust",
-                 plotOutput("PR_plot", click = "PR_click", hover = "PR_hover"),
-                 verbatimTextOutput("PR_info"),
-                 plotOutput("TR_plot", click = "TR_click", hover = "TR_hover"),
-                 verbatimTextOutput("TR_info"),
+                 column(6,numericInput("PT_nh","Number of Height Curves", 11),
+                        numericInput("PT_minh", "Minimum Height (m)", 0),
+                        numericInput("PT_maxh", "Maximum Height (m)", 4000)),
+                 column(6,numericInput("PT_nv","Number of Velocity Points", 51),
+                        numericInput("PT_minv", "Minimum Velocity", 40),
+                        numericInput("PT_maxv", "Maximum Velocity", 150)),
+                 "Legend: Cirlces indicate lowest power and triangles indicate lowest thrust. 
+                 Red marks stall speed and orange marks a safety factor applied to the stall speed.",
+                 "NOTE: The lowest power maximises the endurance, not the range!",
                  plotOutput("Pe_plot", click = "Pe_click", hover = "Pe_hover"),
                  verbatimTextOutput("Pe_info"),
                  plotOutput("Te_plot", click = "Te_click", hover = "Te_hover"),
-                 verbatimTextOutput("Te_info")
+                 verbatimTextOutput("Te_info"),
+                 plotOutput("PR_plot", click = "PR_click", hover = "PR_hover"),
+                 verbatimTextOutput("PR_info"),
+                 plotOutput("TR_plot", click = "TR_click", hover = "TR_hover"),
+                 verbatimTextOutput("TR_info")
                  ),
         tabPanel("Plot", plotOutput("distPlot")),
         tabPanel("Summary", verbatimTextOutput("summary")),

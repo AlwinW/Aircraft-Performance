@@ -1,8 +1,8 @@
 #----------------------------
-#--- Functions
+#--- Functions for Calculation
 #============================
 
-#--- General
+## General ======================================================================
 # K
 K <- function(AR, e)
   1 / (pi * AR * e)
@@ -31,9 +31,10 @@ ClCd <- function(L, D)
 Vmin <- function(rho, W, S, Clmax)
   sqrt(2 / rho * W / S * 1 / Clmax)
 
+## Thrust ======================================================================
 #---Thrust i.e. minimum thrust for (L/D)max
-#   for prop, this gives the best range
-#   for jet, this gives the best endurance
+#---for prop, this gives the best range
+#---for jet, this gives the best endurance
 # Cl*
 Clstar <- function(Cd0, K)
   sqrt(Cd0 / K)
@@ -51,8 +52,9 @@ Vstar <-
 U <- function(Vinf, Vstar)
   Vinf / Vstar
 
+## Power ======================================================================
 #---Power i.e. minimum thrust for (L^(3/2)/D)max
-#   for prop, this gives the best endurance
+#---for prop, this gives the best endurance
 # Cl
 Cl32 <- function(Clstar)
   sqrt(3) * Clstar
@@ -66,8 +68,8 @@ ClCd32 <- function(ClCdstar)
 V32 <- function(Vstar)
   (1 / 3) ^ (1 / 4) * Vstar
 
-#--- Power Required
-# Minimum power i.e. (L^(3/2)/D)max @ V32
+## Power Required ======================================================================
+# Minimum power i.e. (L^(3/2)/D)max @ V32 but this does NOT maximise range!!
 PRmin <-
   function(rho, W, S, Cd0, K)
     (256 / 27) ^ 0.25 * (2 / rho * W / S) ^ 0.5 * (Cd0 * K ^ 3) ^ 0.25 * W
@@ -78,13 +80,14 @@ PR <- function(Vinf, rho, W, S, Cd0, K) {
              ((2 / rho * W / S * 1 / (Vinf ^ 2)) ^ 3))
 }
 
-#--- Thrust Required
+## Thrust Required ======================================================================
 TRmin <- function(W, ClCdstar)
   W / ClCdstar
 TR <- function(W, ClCd)
   W / ClCd
 
-#--- Altitude Effect
+## Altitude Effect ======================================================================
+#--- Altitude Effect (TO DOUBLE CHECK!!)
 # Altitude constants
 alt_r = 0.5
 alt_s = 0.7
@@ -101,14 +104,13 @@ TA <- function(PA, Vinf)
 Texc <- function(TA, TR)
   TA - TR
 
-#---Maximum speed @ altitude
+## Maximum speed @ altitude ======================================================================
 VmaxP <- function(PA, rho, W, S, Cd0, K, x1, x2, info = FALSE) {
   SecantRootUnivariate(function(Vinf)
     PA - PR(Vinf, rho, W, S, Cd0, K), x1, x2, info)
 }
-# VmaxP(3060e3, 1.225, 155e3, 54.4, 0.02, 0.0323, 100, 200)
 
-#---Weight Estimate
+## Weight Estimate  ======================================================================
 # Dimensional constants
 RaymerClass <-
   data.frame(
@@ -128,7 +130,7 @@ PayloadFrac <- function(Wpp, W0)
   Wpp / W0
 
 
-#---Data Frame Operations
+## AeroParams Dataframe Operation  ======================================================================
 AeroParams <- function(inputvals) {
   out <- data.frame(sapply(inputvals, rep.int, times = 3))
   out$type <- c("Sea Level", "Cruise", "Climb")
@@ -153,24 +155,44 @@ AeroParams <- function(inputvals) {
     )
 }
 
-# # Weight estimation (Actually comes out in kg!!)
-# West = data.frame(W0 = seq(500, 5000, by = 100))
-# West <-
-#   mutate(West,
-#          Wb = BatteryFrac(1000e3, 9.81, 1e6, 0.9, 30),
-#          We = RaymerFit(W0, "Twin Turboprop"),
-#          Wp = PayloadFrac(720, W0))
-# 
-# ggplot(West) +
-#   geom_line(aes(x = W0, y = Wb, colour = "Wb")) +
-#   geom_line(aes(x = W0, y = We, colour = "We")) +
-#   geom_line(aes(x = W0, y = Wp, colour = "Wp")) +
-#   geom_line(aes(x = W0, y = Wb + We + Wp)) +
-#   expand_limits(x = 0, y = 0)
-# 
-# 
-# 
-# plot(W0,
-#      WeightEstPlot(W0, 120 * 6, 1000e3, 9.81, 1e6, 0.8, 20, "Twin Turboprop"))
+## ThrustPowerCurves Dataframe Operation  ======================================================================
+ThrustPowerCurves <- function(input, minh, maxh, nh, minv, maxv, nv, VmaxP1, VmaxP2) {
+  out <- 
+    data.frame(h = rep(seq(minh, maxh, length.out = nh), each = nv),
+               Vinf = rep(seq(minv, maxv, length.out = nv), times = nh))
+  out <- out %>%
+    mutate(
+      W = input$W,
+      S = input$S,
+      Cd0 = input$Cd0,
+      P0 = input$P0,
+      Clmax = input$Clmax
+    ) 
+  out$K = input$K 
+  out <- out %>%
+    StandardAtomsphere(.) %>%
+    group_by(h) %>%
+    mutate(
+      qinf = qinf(rho, Vinf),
+      Cl = Cl(W, qinf, S),
+      Cd = Cd(Cd0, K, Cl),
+      ClCd = ClCd(Cl, Cd),
+      ClCdstar = ClCdstar(Cd0, K),
+      Vmin = Vmin(rho, W, S, Clmax),
+      Vstar = Vstar(rho, W, S, K, Cd0),
+      V32 = V32(Vstar),
+      Vcruise = M*a,
+      PRmin = PRmin(rho, W, S, Cd0, K),
+      PR = PR(Vinf, rho, W, S, Cd0, K),
+      TRmin = TRmin(W, ClCdstar),
+      TR = TR(W, ClCd),
+      PA = PA(sigma, P0),
+      Pexc = Pexc(PA, PR),
+      TA = TA(PA, Vinf),
+      Texc = Texc(TA, TR)
+    ) %>%
+    rowwise() %>%
+    mutate(VmaxP = VmaxP(PA, rho, W, S, Cd0, K, VmaxP1, VmaxP2))
+}
 
-#---Use the previous functions to mutate a dataframe
+

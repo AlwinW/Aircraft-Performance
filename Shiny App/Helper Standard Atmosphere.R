@@ -34,13 +34,3 @@ StandardAtomsphere <- function(data) {
     select(-hc, -dTdh, -Tc, -deltac, -goRTc, -thetac, -rearth, - theta, -delta)
   return(as.data.frame(data))
 }
-# #---Test
-# h <- data.frame(h = seq(0, 20000, by = 1000))
-# h$dummy1 <- 1
-# h$dummy2 <- 2
-# # Remove "-theta, - delta" to work
-# h <- StandardAtomsphere(h)
-# ggplot(data=h) +
-#   geom_path(aes(x=h, y=theta), colour = "blue") +
-#   geom_path(aes(x=h, y=delta), colour = "red") +
-#   geom_path(aes(x=h, y=sigma), colour = "yellow")
