@@ -55,11 +55,13 @@ shinyServer(function(input, output,session) {
 ## Download Input Data ======================================================================
   observe({
     # Get updated inputvals (reactive)
-    inputvals <- data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
-                            Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
-                            m = input$m, W = input$W, WS = input$WS,
-                            P0eng = input$P0eng, P0 = input$P0
-    )
+    inputvals <- 
+      data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
+                 Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
+                 m = input$m, W = input$W, WS = input$WS,
+                 P0eng = input$P0eng, P0 = input$P0,
+                 ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
+      )
     # Use the download handler in the UI
     output$downloadData <- downloadHandler(
       # Provide a filename of the data to be downloaded
@@ -120,21 +122,25 @@ shinyServer(function(input, output,session) {
     if (!is.na(input$P0eng) & input$P0eng != 0) 
       updateNumericInput(session, "P0", value = input$P0eng * 2)
     # Store the values as a data frame called inputvals
-    inputvals <- data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
-                        Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
-                        m = input$m, W = input$W, WS = input$WS,
-                        P0eng = input$P0eng, P0 = input$P0
-                        )
+    inputvals <- 
+      data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
+                 Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
+                 m = input$m, W = input$W, WS = input$WS,
+                 P0eng = input$P0eng, P0 = input$P0,
+                 ClG = input$ClG, hground = input$hground
+      )
   })
   
 ## Aerodynmic Properties Table ======================================================================
   observe({
     # Get updated inputvals (reactive)
-    inputvals <- data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
-                            Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
-                            m = input$m, W = input$W, WS = input$WS,
-                            P0eng = input$P0eng, P0 = input$P0
-    )
+    inputvals <- 
+      data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
+                 Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
+                 m = input$m, W = input$W, WS = input$WS,
+                 P0eng = input$P0eng, P0 = input$P0,
+                 ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
+      )
     # Create the data using AeroParams in "Helper Calculation Functions.R"
     # Note: This requires h_ceil and h_cruise to be global variables
     AeroParamsTable <- AeroParams(inputvals) %>%
@@ -317,10 +323,13 @@ shinyServer(function(input, output,session) {
 ## Climb ======================================================================
   observe({
     # Get updated inputvals (reactive)
-    inputvals <- data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
-                            Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
-                            m = input$m, W = input$W, WS = input$WS,
-                            P0eng = input$P0eng, P0 = input$P0)
+    inputvals <- 
+      data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
+                 Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
+                 m = input$m, W = input$W, WS = input$WS,
+                 P0eng = input$P0eng, P0 = input$P0,
+                 ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
+      )
     
     # Climb in general
     heights <- data.frame(type = c("Sea Level", "2nd Seg Climb", "3rd Seg Accel", "Cruise", "Ceiling"),
@@ -378,8 +387,10 @@ shinyServer(function(input, output,session) {
   
   
   # # Uncomment ONLYL for debugging - otherwise, the app will no longer be reactive
-  # input <- data.frame(S = 54.4, b = 25.90, AR = 12.33, e = 0.8, K = 0.0323, Cd0 = 0.02, Clmax = 1.5, Clflaps = 0.80, Clhls = 1.20,
+  # input <- data.frame(S = 54.4, b = 25.90, AR = 12.33, e = 0.8, K = 0.0323,
+  #                     Cd0 = 0.02, Clmax = 1.5, Clflaps = 0.80, Clhls = 1.20,
   #                     m = 15806, W = 155000, WS = 2850, P0eng = 1530000, P0 = 3060000,
   #                     OW_nv = 51, OW_nh = 51, OW_maxh = 12500, OW_maxv = 200,
-  #                     PT_minh = 0, PT_maxh = 4000, PT_nh = 11, PT_minv = 40, PT_maxv = 100, PT_nv = 51)
+  #                     PT_minh = 0, PT_maxh = 4000, PT_nh = 11, PT_minv = 40, PT_maxv = 100, PT_nv = 51,
+  #                     ClG = 0.25, Cd0G = 0.03, hground = 2.0)
 })

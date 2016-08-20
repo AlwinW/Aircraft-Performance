@@ -32,7 +32,12 @@ shinyUI(fluidPage(
       #
       h3("Propulsion Parameters"),
       numericInput("P0eng", "Power per Engine (W)", 1.53e6),
-      numericInput("P0","Total Static Power (autocalculated x2 Engine Power) (W)", 3.06e6)
+      numericInput("P0","Total Static Power (autocalculated x2 Engine Power) (W)", 3.06e6),
+      #
+      h3("Takeoff Parameters"),
+      numericInput("ClG", "Coefficient of Lift at zero Angle of Attack", 0.25),
+      numericInput("Cd0G", "Wing height above the ground", 0.03),
+      numericInput("hground", "Wing height above the ground", 2.0)
     ),
     
     # Show a plot of the generated distributions
