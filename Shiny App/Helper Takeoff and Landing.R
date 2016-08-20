@@ -19,18 +19,12 @@ Keff <- function(K, h, b)
   (33 * (h/b)^1.5) / (1 + 33 * (h/b)^1.5)  * K
 
 AirDist <- function(Vstall, g, T, D, W, hobs) {
-  R <- (1.15 * Vstall)^2 / (0.2 * 9.81)
+  R <- (1.15 * Vstall) ^ 2 / (0.2 * 9.81)
   gamma = asin((T - D) / W)
   hTR <- R * (1 - cos(gamma))
-  if (hTR >= 35 * 0.3) {
-    ST = sqrt(R^2 - (R - hTR)^2) ## THIS IS WRONG
-    SC = 0
-  } 
-  else {
-    ST = R * ((T - D) / W)
-    SC = (hobs - hTR) / tan(gamma)
-  }
-  return(c(gamma, ST, SC, hTR))
+  ST = R * ((T - D) / W)
+  SC = (hobs) / tan(gamma)
+  return(c(gamma, 0, SC, hTR))
 }
 
 # Requires airplane data + various velocities
@@ -93,7 +87,9 @@ AccelerateLiftoff <- mutate(AccelerateLiftoff, AccelerateLiftoff = (`All Engines
 # print.data.frame(AccelerateStop)
 
 ggplot() + 
-  geom_path(data = AccelerateStop, aes(x = Vinf, y = AccelerateStop)) +
-  geom_path(data = AccelerateContinue, aes(x = Vinf, y = AccelerateContinue)) +
-  geom_point(data = AccelerateLiftoff, aes(x = Vinf, y = AccelerateLiftoff))
+  geom_path(data = AccelerateStop, aes(x = Vinf, y = AccelerateStop, colour = "Accelerate-Stop")) +
+  geom_path(data = AccelerateContinue, aes(x = Vinf, y = AccelerateContinue, colour = "Accelerate-Continue")) +
+  geom_point(data = AccelerateLiftoff, aes(x = Vinf, y = AccelerateLiftoff, colour = "Accelerate-Liftoff")) +
+  geom_hline(aes(yintercept = AccelerateLiftoff$AccelerateLiftoff, colour = "Accelerate-Liftoff")) +
+  geom_hline(aes(yintercept = 1200, colour = "Maximum"))
   # In the future iteratively decrease the vstep until a solution is found for the curve intersections

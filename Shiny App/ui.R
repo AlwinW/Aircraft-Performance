@@ -36,7 +36,7 @@ shinyUI(fluidPage(
       #
       h3("Takeoff Parameters"),
       numericInput("ClG", "Coefficient of Lift at zero Angle of Attack", 0.25),
-      numericInput("Cd0G", "Wing height above the ground", 0.03),
+      numericInput("Cd0G", "Cd0 in takeoff config", 0.03),
       numericInput("hground", "Wing height above the ground", 2.0)
     ),
     
@@ -95,8 +95,11 @@ shinyUI(fluidPage(
                  ),
         tabPanel("Climb",
                  plotOutput("PG_plot", click = "PG_click", hover = "PG_hover"),
-                 plotOutput("CR_plot", click = "CR_click", hover = "PG_hover"),
+                 plotOutput("CA_plot", click = "CA_click", hover = "CA_hover"),
+                 plotOutput("CR_plot", click = "CR_click", hover = "CR_hover"),
                  plotOutput("CRa_plot", click = "CRa_click", hover = "PG_hover")),
+        tabPanel("Takeoff Field Length",
+                 plotOutput("TFL_plot", click = "TFL_click", hover = "TFL_hover")),
         tabPanel("Summary", verbatimTextOutput("summary")),
         tabPanel("Table", tableOutput("table"))
       )
