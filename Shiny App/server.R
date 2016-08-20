@@ -367,7 +367,7 @@ shinyServer(function(input, output,session) {
     # Graph of Climb Rates in ft per minute
     output$CRa_plot <- renderPlot({
       ggplot(climball, aes(x=Vinf, ClimbRate / 0.3 * 60, group = type, colour = type)) + 
-        geom_path() + 
+        # geom_path() + 
         geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
         scale_size(range = c(0,3)) + 
         scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
