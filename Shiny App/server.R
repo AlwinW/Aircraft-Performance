@@ -50,7 +50,7 @@ shinyServer(function(input, output,session) {
               1000, 35, 100, 1.5, 300, 100, 10000, 12000,
               M, 1000, -1.5, 3.5))
   # Output the specifications as a table (this is not updated ever)
-  output$specs <- renderTable(Specifications)
+  output$specs <- renderDataTable(Specifications)
   
 ## Download Input Data ======================================================================
   observe({
@@ -111,8 +111,12 @@ shinyServer(function(input, output,session) {
   observe({
     # Calculate required inputs
     # First make sure no errors are thrown when recalculating
-    if (!is.na(input$S) & !is.na(input$b) & input$S*input$b != 0) 
-      updateNumericInput(session, "AR", value = input$b^2/input$S)
+    # if (!is.na(input$S) & !is.na(input$b) & input$S*input$b != 0) 
+    #   updateNumericInput(session, "AR", value = input$b^2/input$S)
+    
+    if (!is.na(input$S) & !is.na(input$AR) & input$S*input$AR != 0)
+      updateNumericInput(session, "b", value = sqrt(input$AR * input$S))
+    
     if (!is.na(input$e) & !is.na(input$AR) & input$e*input$AR != 0) 
       updateNumericInput(session, "K", value = 1/(pi * input$AR * input$e))
     if (!is.na(input$m) & input$m != 0) 
@@ -144,9 +148,9 @@ shinyServer(function(input, output,session) {
     # Create the data using AeroParams in "Helper Calculation Functions.R"
     # Note: This requires h_ceil and h_cruise to be global variables
     AeroParamsTable <- AeroParams(inputvals) %>%
-      select(type, h, Vinf, qinf, Cl, Cd, ClCd, Clstar, Cd, Cdstar, ClCdstar, Vstar, Cl32, Cd32, ClCd32, V32)
+      select(type, h, Vinf, Vstall, Vsafe, qinf, Cl, Cd, ClCd, Clstar, Cd, Cdstar, ClCdstar, Vstar, Cl32, Cd32, ClCd32, V32)
     # Output the table
-    output$AeroParamsTable <- renderTable(t(AeroParamsTable))
+    output$AeroParamsTable <- renderDataTable((AeroParamsTable))
     
     # Create/Update the data for a plot of the drag polar
     AeroParamsPlot <- data.frame(Cl = seq(from=0, to=inputvals$Clmax, by=0.1))
@@ -320,6 +324,8 @@ shinyServer(function(input, output,session) {
     
     
   })
+
+
 ## Climb ======================================================================
   observe({
     # Get updated inputvals (reactive)
@@ -424,6 +430,7 @@ shinyServer(function(input, output,session) {
     Keff <- function(K, h, b)
       (33 * (h/b)^1.5) / (1 + 33 * (h/b)^1.5)  * K
     
+    # Air Distance Function
     AirDist <- function(Vstall, g, T, D, W, hobs) {
       R <- (1.15 * Vstall) ^ 2 / (0.2 * 9.81)
       gamma = asin((T - D) / W)
@@ -434,6 +441,7 @@ shinyServer(function(input, output,session) {
     }
     
     # Requires airplane data + various velocities
+    # Create a dataframe of the inital takeoff values and 3 cases
     takeoff <- data.frame(sapply(inputvals, rep.int, times = 3))
     takeoff$type <- c("All Engines", "One Engine Down", "Rejected Take-Off")
     takeoff$Ne <- c(2, 1, 0) # Change the last one from 0 to say -0.5 if reverse availalbe
@@ -460,37 +468,73 @@ shinyServer(function(input, output,session) {
              D = D(qinf, S, Cd), L = L(qinf, S, ClG),
              Ff = (W - L) * mu, Fnet = TA - D - Ff, accel = Fnet/(W/g),
              arecip = 1/(2*accel), Vsq = Vinf^2) %>%
-      rowwise() %>%
-      mutate(gamma = ifelse(Vinf== Vlof, AirDist(Vstall, g, TA, D, W, 35*0.3)[1], NA),
-             ST = ifelse(Vinf== Vlof, AirDist(Vstall, g, TA, D, W, 35*0.3)[2], NA),
-             SC = ifelse(Vinf== Vlof, AirDist(Vstall, g, TA, D, W, 35*0.3)[3], NA),
-             hTC = ifelse(Vinf== Vlof, AirDist(Vstall, g, TA, D, W, 35*0.3)[4], NA)) %>% 
-      ungroup() %>%
       group_by(type) %>%
       mutate(Area = 1/2 * (arecip + lag(arecip,1)) * (Vsq - lag(Vsq,1)),
              Area = ifelse(is.na(Area), 0, Area),
              Area = cumsum(Area),
              Area = ifelse(is.na(Area), 0, Area))
     
+    # Find the distance flying through the air
+    AirDistVals <- inputvals[rep(row.names(inputvals), each=2), 1:length(inputvals)]
+    rownames(AirDistVals) <- NULL
+    AirDistVals$type <- c("All Engines", "One Engine Down")
+    AirDistVals$Ne <- c(2, 1)
+    AirDistVals <- AirDistVals %>%
+      mutate(h = 0) %>%
+      StandardAtomsphere(.) %>%
+      mutate(
+        ClTR = Clmax + Clflaps,
+        Vstall = Vmin(rho, W, S, ClTR),
+        VTR = Vstall * 1.15,
+        PA = PA(sigma, P0eng * Ne),
+        TA = TA(PA, VTR),
+        Cd = Cd(Cd0G, K, ClTR),
+        qinf = qinf(rho, VTR),
+        D = D(qinf, S, Cd),
+        L = L(qinf, S, ClTR)
+      ) %>%
+      rowwise() %>%
+      mutate(gamma = AirDist(Vstall, g, TA, D, W, 35*0.3)[1],
+             ST = AirDist(Vstall, g, TA, D, W, 35*0.3)[2],
+             SC = AirDist(Vstall, g, TA, D, W, 35*0.3)[3],
+             hTC = AirDist(Vstall, g, TA, D, W, 35*0.3)[4]) %>% 
+      ungroup()
+    
+    # Find the distance required to accelerate then stop after V1
     AccelerateStop <- takeoff %>%
       select(Vinf, type, Area) %>%
       spread(type, Area) %>%
       mutate(AccelerateStop = `All Engines` - `Rejected Take-Off`)
     
+    # Find the distance required to accelerate then continue after failure at V1
     AccelerateContinue <- takeoff %>%
       select(Vinf, type, Area) %>%
       spread(type, Area) %>%
       mutate(`One Engine Down` = max(`One Engine Down`) - `One Engine Down`)
-    AccelerateContinue$`Air Distance` = sum(tail(filter(takeoff, type == "One Engine Down") %>% ungroup() %>% select(ST, SC),1))
+    AccelerateContinue$`Air Distance` = sum(filter(AirDistVals, type == "One Engine Down") %>% select(ST, SC))
     AccelerateContinue <- mutate(AccelerateContinue, AccelerateContinue = `All Engines` + `One Engine Down` + `Air Distance`)
     
+    # Find the distannce required to take off with all engines * 1.15
     AccelerateLiftoff <- takeoff %>%
       select(Vinf, type, Area) %>%
       spread(type, Area)
     AccelerateLiftoff <- tail(AccelerateLiftoff,1)
-    AccelerateLiftoff$`Air Distance` = sum(tail(filter(takeoff, type == "All Engines") %>% ungroup() %>% select(ST, SC),1))
+    AccelerateLiftoff$`Air Distance` = sum(filter(AirDistVals, type == "All Engines") %>% select(ST, SC))
     AccelerateLiftoff <- mutate(AccelerateLiftoff, AccelerateLiftoff = (`All Engines` + `Air Distance`) * 1.15)
-    # print.data.frame(AccelerateStop)
+    
+    # Find the value of BFL
+    BFL <- AccelerateStop %>% select(Vinf, AccelerateStop)
+    BFL$AccelerateContinue <- AccelerateContinue$AccelerateContinue
+    BFL <- mutate(BFL, diff = AccelerateContinue - AccelerateStop,
+                  root = sign(diff*lag(diff,1)),
+                  root = root*lead(root,1)) %>%
+      filter(root == -1) %>%
+      arrange(abs(diff))
+    
+    
+    output$TFLout <- renderDataTable({
+      BFL
+    })
     
     output$TFL_plot <- renderPlot({
       ggplot() + 
@@ -515,4 +559,28 @@ shinyServer(function(input, output,session) {
   #                     OW_nv = 51, OW_nh = 51, OW_maxh = 12500, OW_maxv = 200,
   #                     PT_minh = 0, PT_maxh = 4000, PT_nh = 11, PT_minv = 40, PT_maxv = 100, PT_nv = 51,
   #                     ClG = 0.25, Cd0G = 0.03, hground = 2.0)
+  
+  ## General Weight Fractions ======================================================================
+  observe({
+    Wpp <- data.frame(WppW = 720 / input$m)
+    
+    Wb <- filter(AeroParamsTable, type == "Cruise") %>%
+      StandardAtomsphere(.) %>%
+      mutate(D = D(qinf, input$S, Cd)) %>%
+      select(type, h, Vinf,  rho, qinf, Cl, Cd, ClCd, Clstar, Cdstar,
+             ClCdstar, Vstar, D) %>%
+      mutate(Eeng = D * 1200e3,
+             eta = 0.84,
+             Wb = Eeng/(1e6 * eta),
+             Vb = Wb/2.75e3,
+             WbW = Wb/input$m)
+    
+    output$GenWeightFracs1 <- renderPrint({
+      print.data.frame(Wpp)
+      print.data.frame(Wb)
+      print(1 - Wpp$WppW - Wb$WbW)
+    })
+    
+  })
+  
 })

@@ -46,12 +46,12 @@ shinyUI(fluidPage(
         position = "above",
         #---Specifications
         tabPanel("Specifications",
-                 tableOutput("specs")),
+                 dataTableOutput("specs")),
         
         #---Aerodyanmic Properties
         tabPanel("Aerodynamic Properties",
                  h3("Various Altitudes"),
-                 tableOutput("AeroParamsTable"),
+                 dataTableOutput("AeroParamsTable"),
                  h3("Drag Polar"),
                  plotOutput("AeroParamsPlot", click = "APP_click", dblclick = "APP_dblclick",
                             hover = "APP_hover", brush = "APP_brush"),
@@ -99,7 +99,11 @@ shinyUI(fluidPage(
                  plotOutput("CR_plot", click = "CR_click", hover = "CR_hover"),
                  plotOutput("CRa_plot", click = "CRa_click", hover = "PG_hover")),
         tabPanel("Takeoff Field Length",
-                 plotOutput("TFL_plot", click = "TFL_click", hover = "TFL_hover")),
+                 plotOutput("TFL_plot", click = "TFL_click", hover = "TFL_hover"),
+                 dataTableOutput("TFLout")),
+        tabPanel("General Weight Fractions",
+                 verbatimTextOutput("GenWeightFracs1"),
+                 dataTableOutput("GenWeightFracs2")),
         tabPanel("Summary", verbatimTextOutput("summary")),
         tabPanel("Table", tableOutput("table"))
       )

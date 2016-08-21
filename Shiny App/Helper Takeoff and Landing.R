@@ -18,6 +18,7 @@ groundmu <- data.frame(names = c("Dry Concrete", "Wet Concrete", "Icy Concrete")
 Keff <- function(K, h, b)
   (33 * (h/b)^1.5) / (1 + 33 * (h/b)^1.5)  * K
 
+# Air Distance Function
 AirDist <- function(Vstall, g, T, D, W, hobs) {
   R <- (1.15 * Vstall) ^ 2 / (0.2 * 9.81)
   gamma = asin((T - D) / W)
@@ -28,6 +29,7 @@ AirDist <- function(Vstall, g, T, D, W, hobs) {
 }
 
 # Requires airplane data + various velocities
+# Create a dataframe of the inital takeoff values and 3 cases
 takeoff <- data.frame(sapply(inputvals, rep.int, times = 3))
 takeoff$type <- c("All Engines", "One Engine Down", "Rejected Take-Off")
 takeoff$Ne <- c(2, 1, 0) # Change the last one from 0 to say -0.5 if reverse availalbe
@@ -54,37 +56,69 @@ takeoff <- takeoff %>%
          D = D(qinf, S, Cd), L = L(qinf, S, ClG),
          Ff = (W - L) * mu, Fnet = TA - D - Ff, accel = Fnet/(W/g),
          arecip = 1/(2*accel), Vsq = Vinf^2) %>%
-  rowwise() %>%
-  mutate(gamma = ifelse(Vinf== Vlof, AirDist(Vstall, g, TA, D, W, 35*0.3)[1], NA),
-         ST = ifelse(Vinf== Vlof, AirDist(Vstall, g, TA, D, W, 35*0.3)[2], NA),
-         SC = ifelse(Vinf== Vlof, AirDist(Vstall, g, TA, D, W, 35*0.3)[3], NA),
-         hTC = ifelse(Vinf== Vlof, AirDist(Vstall, g, TA, D, W, 35*0.3)[4], NA)) %>% 
-  ungroup() %>%
   group_by(type) %>%
   mutate(Area = 1/2 * (arecip + lag(arecip,1)) * (Vsq - lag(Vsq,1)),
          Area = ifelse(is.na(Area), 0, Area),
          Area = cumsum(Area),
          Area = ifelse(is.na(Area), 0, Area))
 
+# Find the distance flying through the air
+AirDistVals <- inputvals[rep(row.names(inputvals), each=2), 1:length(inputvals)]
+rownames(AirDistVals) <- NULL
+AirDistVals$type <- c("All Engines", "One Engine Down")
+AirDistVals$Ne <- c(2, 1)
+AirDistVals <- AirDistVals %>%
+  mutate(h = 0) %>%
+  StandardAtomsphere(.) %>%
+  mutate(
+    ClTR = Clmax + Clflaps,
+    Vstall = Vmin(rho, W, S, ClTR),
+    VTR = Vstall * 1.15,
+    PA = PA(sigma, P0eng * Ne),
+    TA = TA(PA, VTR),
+    Cd = Cd(Cd0G, K, ClTR),
+    qinf = qinf(rho, VTR),
+    D = D(qinf, S, Cd),
+    L = L(qinf, S, ClTR)
+  ) %>%
+  rowwise() %>%
+  mutate(gamma = AirDist(Vstall, g, TA, D, W, 35*0.3)[1],
+         ST = AirDist(Vstall, g, TA, D, W, 35*0.3)[2],
+         SC = AirDist(Vstall, g, TA, D, W, 35*0.3)[3],
+         hTC = AirDist(Vstall, g, TA, D, W, 35*0.3)[4]) %>% 
+  ungroup()
+
+# Find the distance required to accelerate then stop after V1
 AccelerateStop <- takeoff %>%
   select(Vinf, type, Area) %>%
   spread(type, Area) %>%
   mutate(AccelerateStop = `All Engines` - `Rejected Take-Off`)
 
+# Find the distance required to accelerate then continue after failure at V1
 AccelerateContinue <- takeoff %>%
   select(Vinf, type, Area) %>%
   spread(type, Area) %>%
   mutate(`One Engine Down` = max(`One Engine Down`) - `One Engine Down`)
-AccelerateContinue$`Air Distance` = sum(tail(filter(takeoff, type == "One Engine Down") %>% ungroup() %>% select(ST, SC),1))
+AccelerateContinue$`Air Distance` = sum(filter(AirDistVals, type == "One Engine Down") %>% select(ST, SC))
 AccelerateContinue <- mutate(AccelerateContinue, AccelerateContinue = `All Engines` + `One Engine Down` + `Air Distance`)
 
+# Find the distannce required to take off with all engines * 1.15
 AccelerateLiftoff <- takeoff %>%
   select(Vinf, type, Area) %>%
   spread(type, Area)
 AccelerateLiftoff <- tail(AccelerateLiftoff,1)
-AccelerateLiftoff$`Air Distance` = sum(tail(filter(takeoff, type == "All Engines") %>% ungroup() %>% select(ST, SC),1))
+AccelerateLiftoff$`Air Distance` = sum(filter(AirDistVals, type == "All Engines") %>% select(ST, SC))
 AccelerateLiftoff <- mutate(AccelerateLiftoff, AccelerateLiftoff = (`All Engines` + `Air Distance`) * 1.15)
-# print.data.frame(AccelerateStop)
+
+# Find the value of BFL
+BFL <- AccelerateStop %>% select(Vinf, AccelerateStop)
+BFL$AccelerateContinue <- AccelerateContinue$AccelerateContinue
+BFL <- mutate(BFL, diff = AccelerateContinue - AccelerateStop,
+              root = sign(diff*lag(diff,1)),
+              root = root*lead(root,1)) %>%
+  filter(root == -1) %>%
+  arrange(abs(diff))
+
 
 ggplot() + 
   geom_path(data = AccelerateStop, aes(x = Vinf, y = AccelerateStop, colour = "Accelerate-Stop")) +

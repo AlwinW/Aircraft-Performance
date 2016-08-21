@@ -140,6 +140,8 @@ AeroParams <- function(inputvals) {
     mutate(
     M = M,
     Vinf = M * a,
+    Vstall = Vmin(rho, W, S, Clmax),
+    Vsafe = 1.2*Vstall,
     qinf = qinf(rho, Vinf),
     Cl = Cl(W, qinf, S),
     Cd = Cd(Cd0, K, Cl),
