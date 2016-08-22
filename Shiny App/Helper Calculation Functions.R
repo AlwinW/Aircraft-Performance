@@ -199,6 +199,27 @@ ThrustPowerCurves <- function(input, minh, maxh, nh, minv, maxv, nv, VmaxP1, Vma
 }
 
 ## Climb  ======================================================================
+ClimbRatesFunction <- function(P, Cd0, rho, V, S, K, W) {
+  a = P - 1/2 * Cd0 * rho * V^3 * S
+  b = (2 * K * W^2) / (rho * V * S)
+  c = W * V
+  sintheta = c((c - sqrt(-4*a*b + 4*b^2 + c^2)) / (2*b),
+               (c + sqrt(-4*a*b + 4*b^2 + c^2)) / (2*b))
+  sintheta = sintheta[sintheta < 0.5 & sintheta > -0.5]
+  if (length(sintheta) != 1) {
+    return(NA)
+  }
+  else {
+    theta = asin(sintheta)
+    return(theta * 180 / pi)
+    
+  }
+}
+
+# asdf <- ClimbRatesFunction(750000, 0.02, 1.225, 82.4, 18, 0.01538, 7500*9.81)
+
+
+
 ClimbRates <- function(inputvals, heights) {
   # Add in the various interested heights
   out <- data.frame(sapply(inputvals, rep.int, times = nrow(heights)))
@@ -213,29 +234,31 @@ ClimbRates <- function(inputvals, heights) {
     rowwise() %>%
     do(data.frame(.,
                   Vinf = c(
-                    seq(.$Vflaps, .$Vmin, length.out = 3),
-                    seq(.$Vmin, .$Vmin * 1.2, length.out = 5),
-                    seq(.$Vmin * 1.2, .$Vcruise, length.out = 5),
+                    seq(.$Vflaps, .$Vmin, length.out = 10),
+                    seq(.$Vmin, .$Vmin * 1.2, length.out = 10),
+                    seq(.$Vmin * 1.2, .$Vcruise, length.out = 10),
                     seq(.$Vcruise, .$Vcruise * 2, length.out = 20)),
                   Vname = c(
-                    "Vflaps", rep("Vinf", 1), "Vstall",
-                    "Vstall", rep("Vinf", 3),"Vsafe",
-                    "Vsafe", rep("Vinf", 3), "Vcruise",
+                    "Vflaps", rep("Vinf", 8), "Vstall",
+                    "Vstall", rep("Vinf", 8),"Vsafe",
+                    "Vsafe", rep("Vinf", 8), "Vcruise",
                     "Vcruise", rep("Vinf", 19))
                   )) %>%
     arrange(h, Vinf) %>%
     distinct(.keep_all = TRUE) %>%
     select(-Vmin,-Vcruise) %>%
+    ungroup() %>%
+    rowwise() %>%
     mutate(qinf = qinf(rho, Vinf),
            Cl = Cl(W, qinf, S),
            Cd = Cd(Cd0, K, Cl),
            D = D(qinf, S, Cd),
            PA = PA(sigma, P0),
            TA = TA(PA, Vinf),
-           SinTheta = (TA - D)/W,
-           Theta = asin(SinTheta) * 180/pi,
+           Theta = ClimbRatesFunction(PA, Cd0, rho, Vinf, S, K, W),
+           SinTheta = sin(Theta*pi/180),
            PercentageGradient = SinTheta*100,
-           ClimbRate = (PA - D*Vinf)/W
+           ClimbRate = SinTheta * Vinf
     ) %>%
     group_by(type)
 }
