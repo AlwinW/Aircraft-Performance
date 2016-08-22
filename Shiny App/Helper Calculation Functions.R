@@ -90,7 +90,7 @@ TR <- function(W, ClCd)
 #--- Altitude Effect (TO DOUBLE CHECK!!)
 # Altitude constants
 alt_r = 0.5
-alt_s = 0.7
+alt_s = 0 # set to zero so there is no altitude effect
 # Power Available
 PA <- function(sigma, P0)
   sigma ^ 0.7 * P0
