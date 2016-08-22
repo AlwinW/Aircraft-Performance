@@ -206,6 +206,10 @@ ClimbRatesFunction <- function(P, Cd0, rho, V, S, K, W) {
   sintheta = c((c - sqrt(-4*a*b + 4*b^2 + c^2)) / (2*b),
                (c + sqrt(-4*a*b + 4*b^2 + c^2)) / (2*b))
   sintheta = sintheta[sintheta < 0.5 & sintheta > -0.5]
+  
+  # NOTE I NEED TO CHECK THE REQUIRED Clmax FOR THIS ANGLE.
+  # IF TOO BIG, reduce and use LESS Power
+  
   if (length(sintheta) != 1) {
     return(NA)
   }

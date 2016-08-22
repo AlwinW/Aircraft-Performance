@@ -103,7 +103,8 @@ shinyUI(fluidPage(
                  dataTableOutput("TFLout")),
         tabPanel("General Weight Fractions",
                  verbatimTextOutput("GenWeightFracs1"),
-                 dataTableOutput("GenWeightFracs2")),
+                 dataTableOutput("GenWeightFracs2"),
+                 verbatimTextOutput("RoughPower")),
         tabPanel("Summary", verbatimTextOutput("summary")),
         tabPanel("Table", tableOutput("table"))
       )
