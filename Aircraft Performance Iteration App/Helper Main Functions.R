@@ -240,10 +240,10 @@ AirDistLD <- AirDistLD %>%
     Clmax = Clclean + Clhls,
     Vstall = Vmin(rho, WS, Clmax),
     Vapp = 1.3* Vstall,
-    qinf = 1/2 * rho * Vapp,
-    gamma = 3,
+    qinf = 1/2 * rho * Vapp^2,
+    gamma = max(-3, ClimbRatesFunction(0.01*P0, Cd0G, rho, Vapp, S, K, W)[[1]]),
     L = W * cos(gamma * pi / 180),
-    Cl = L / (qinf * Vapp),
+    Cl = L / (qinf * S),
     Cd = Cd0G + K * Cl^2,
     D = qinf * S * Cd,
     TR = D - W * sin(gamma * pi / 180),
@@ -257,7 +257,7 @@ AirDistLD <- AirDistLD %>%
 out4 <- inp
 out4$type <- "Engines off"
 out4$Ne <- 0
-out4$mu <- as.double(filter(groundmu,names == "Dry Concrete") %>% select(brakeson))
+out4$mu <- as.double(filter(groundmu, names == "Dry Concrete") %>% select(brakeson))
 
 out4 <- mutate(out4, h = 0) %>%
   StandardAtomsphere(.) %>%
@@ -325,13 +325,13 @@ PTOgr <- filter(out2, type == "All Engines") %>%
 PTOtr <- filter(AirDistTO, type == "All Engines") %>%
   ungroup() %>%
   mutate(type = "Take-off Transition",
-         theta = ifelse(SC > 0, atan(hTR / ST), atan(Hobs / Sair)),
+         theta = ifelse(SC > 0, atan(hTR / ST), atan(Hobs / Sair)) * 180 / pi,
          Clmax = Clclean + Clflaps,
          Vinf = VTR,
          Cl = Clmax/(1.15^2),
          ClCd = Cl/Cd,
-         Vv = Vinf * sin(theta),
-         Vh = Vinf * cos(theta),
+         Vv = Vinf * sin(theta * pi/ 180),
+         Vh = Vinf * cos(theta * pi/ 180),
          duration = ifelse(SC > 0, hTR / Vv, Hobs / Vv),
          h = ifelse(SC > 0, hTR, Hobs))
 PTOtr <- PTOtr[rep(row.names(PTOtr), each = 2), 1:length(PTOtr)]
@@ -355,13 +355,13 @@ PTOtr <- PTOtr %>%
 Pseg1 <- filter(AirDistTO, type == "All Engines") %>%
   ungroup() %>%
   mutate(type = "Segment 1 - Climb",
-         theta = ifelse(SC > 0, atan((Hobs - hTR) / SC), 0),
+         theta = ifelse(SC > 0, atan((Hobs - hTR) / SC), 0) * 180 / pi,
          Clmax = Clclean + Clflaps,
          Vinf = VTR,
          Cl = Clmax/(1.15^2),
          ClCd = Cl/Cd,
-         Vv = Vinf * sin(theta),
-         Vh = Vinf * cos(theta),
+         Vv = Vinf * sin(theta* pi/ 180),
+         Vh = Vinf * cos(theta* pi/ 180),
          duration = ifelse(SC > 0, (Hobs - hTR) / Vv, 0),
          h = ifelse(SC > 0, hTR, Hobs))
 Pseg1 <- Pseg1[rep(row.names(Pseg1), each = 2), 1:length(Pseg1)]
@@ -463,7 +463,7 @@ Pseg4 <- cbind(inp, h = Pseg4Heights, type = "4th Segment Climb") %>%
   mutate(theta = ClimbRatesFunction(PA, Cd0, rho, Vinf, S, K, W)[[1]],
          Vv = Vinf * sin(theta * pi / 180),
          Vh = Vinf * cos(theta * pi / 180),
-         Cl = W * cos(theta * pi / 180) / (qinf  * S),
+         Cl = W * cos(theta * pi / 180) / (qinf * S),
          Cd = Cd0 + K*Cl^2,
          ClCd = Cl/Cd) %>%
   ungroup() %>%
@@ -479,13 +479,165 @@ Pseg4 <- cbind(inp, h = Pseg4Heights, type = "4th Segment Climb") %>%
          R = cumsum(Rduration)) %>%
   select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
 
+#--- Descent
+Pdes4num = 20
+PdesHeights <- seq(inp$AltCruise, 50*0.3048, length.out = Pdes4num)
+PdesVelocities <- seq(as.double(filter(AeroParamsTable, type == "Cruise") %>% select(Vinf)), AirDistLD$Vapp, length.out = Pdes4num)
+
+
+Pdes <- inp
+Pdes$type <- "Descent"
+Pdes$Ne <- 2
+Pdes <- Pdes[rep(row.names(Pdes), each = Pdes4num), 1:length(Pdes)]
+rownames(Pdes) <- NULL
+Pdes$h <- PdesHeights
+Pdes$Vinf <- PdesVelocities
+
+Pdes <- Pdes %>%
+  StandardAtomsphere(.) %>%
+  rowwise() %>%
+  mutate(
+    Clmax = Clclean + Clhls,
+    Vstall = Vmin(rho, WS, Clmax),
+    qinf = 1/2 * rho * Vinf^2,
+    theta = max(-3, ClimbRatesFunction(0.000*P0, Cd0, rho, Vinf, S, K, W)[[1]]),
+    L = W * cos(theta * pi / 180),
+    Cl = L / (qinf * S),
+    Cd = Cd0 + K * Cl^2,
+    D = qinf * S * Cd,
+    TR = D - W * sin(theta * pi / 180),
+    PR = TR * Vinf) %>%
+  mutate(
+    Vv = Vinf * sin(theta * pi/ 180),
+    Vh = Vinf * cos(theta* pi/ 180),
+    Cl = W * cos(theta * pi / 180) / (qinf * S),
+    Cd = Cd0 + K*Cl^2,
+    ClCd = Cl/Cd) %>% 
+  ungroup() %>%
+  mutate(duration = 2 * (h - lag(h,1)) / (Vv + lag(Vv,1)),
+         duration = ifelse(is.na(duration), 0, duration),
+         t = cumsum(duration)) %>%
+  mutate(Eduration = 1/2 * (PR + lag(PR,1)) * duration,
+         Eduration = ifelse(is.na(Eduration), 0, Eduration),
+         Eeng = cumsum(Eduration),
+         Wb100 = Eeng / 1e6,
+         Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
+         Rduration = ifelse(is.na(Rduration), 0, Rduration),
+         R = cumsum(Rduration)) %>%
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+
 #--- Landing
+# Flare
+PLDfl <- AirDistLD %>%
+  ungroup() %>%
+  mutate(type = "Landing Flare",
+         theta = atan(50*0.3048 / Sair) * 180/ pi,
+         Clmax = Clclean + Clhls,
+         Vinf = Vapp,
+         ClCd = Cl/Cd,
+         Vv = Vinf * sin(theta * pi/ 180),
+         Vh = Vinf * cos(theta* pi/ 180),
+         duration = 50*0.3048 / Vv,
+         h = 50*0.3048)
+PLDfl <- PLDfl[rep(row.names(PLDfl), each = 2), 1:length(PLDfl)]
+PLDfl$duration <- c(0, PLDfl$duration[2])
+PLDfl$h <- c(PLDfl$h[2], 0)
 
+PLDfl <- PLDfl %>%
+  mutate(t = cumsum(duration),
+         Eduration = 1/2 * (PR + lag(PR,1)) * duration,
+         Eduration = ifelse(is.na(Eduration), 0, Eduration),
+         Eeng = cumsum(Eduration),
+         Wb100 = Eeng / 1e6,
+         Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
+         Rduration = ifelse(is.na(Rduration), 0, Rduration),
+         R = cumsum(Rduration)) %>%
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
 
-
-
+# Ground Roll 
+PLDgr <- out4 %>%
+  ungroup %>%
+  mutate(type = "Landing Ground Roll",
+         theta = 0,
+         ClCd = Cl/Cd,
+         duration = 2*AreaDur/(Vinf + lag(Vinf, 1)),
+         duration = ifelse(is.na(duration), 0, duration)) %>%
+  mutate(t = cumsum(duration),
+         Eduration = 1/2 * (PA + lag(PA,1)) * duration,
+         Eduration = ifelse(is.na(Eduration), 0, Eduration),
+         Eeng = cumsum(Eduration),
+         Wb100 = Eeng / 1e6,
+         Rduration = AreaDur,
+         Rduration = ifelse(is.na(Rduration), 0, Rduration),
+         R = cumsum(Rduration)) %>%
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
 
 #--- Cruise
+Scruise <- inp$Range - tail(PTOgr$R,1) - tail(PTOtr$R,1) -
+  tail(Pseg1$R,1) - tail(Pseg2$R,1) - tail(Pseg3$R,1) - tail(Pseg4$R,1) -
+  tail(Pdes$R,1) - tail(PLDfl$R,1) - tail(PLDgr$R,1)
+
+Pcr <- filter(out1, type == "Cruise") %>%
+  mutate(D = qinf * S * Cd,
+         PR = D * Vinf,
+         theta = 0,
+         Vh = Vinf,
+         duration = Scruise/Vinf)
+Pcr <- Pcr[rep(row.names(Pcr), each = 2), 1:length(Pcr)]
+Pcr$duration <- c(0, Pcr$duration[2])
+ 
+Pcr <- Pcr %>%
+  mutate(t = cumsum(duration),
+         Eduration = 1/2 * (PR + lag(PR,1)) * duration,
+         Eduration = ifelse(is.na(Eduration), 0, Eduration),
+         Eeng = cumsum(Eduration),
+         Wb100 = Eeng / 1e6,
+         Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
+         Rduration = ifelse(is.na(Rduration), 0, Rduration),
+         R = cumsum(Rduration)) %>%
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+
+#--- Total
+Power <- rbind(PTOgr, PTOtr, Pseg1, Pseg2, Pseg3, Pseg4, Pcr, Pdes, PLDfl, PLDgr) %>%
+  mutate(t_total = cumsum(duration),
+         Eeng_total = cumsum(Eduration),
+         R_total = cumsum(Rduration),
+         Wb84_total = Eeng_total/(inp$E * 0.84),
+         Wb84_total = Wb84_total * 1.05,
+         Vb = Wb84_total/inp$Dens)
+
+#--- Battery Fracs
+BatteryFracs <- Power %>%
+  group_by(type) %>%
+  top_n(1, t) %>%
+  ungroup() %>%
+  mutate(`%Wi/Wb` = Eeng/max(Eeng_total)*100,
+         `Wi/W` = Wb100 / 0.84 * 1.05 / inp$W)
+Wb <- max(BatteryFracs$Wb84_total)
+Wb_est <- filter(out1, type == "Cruise") %>%
+  mutate(D = qinf * Cd * S, Wb = D / 0.84 * 1.05 * 1.20) %>%
+  ungroup() %>%
+  select(Wb)
+Wb_est <- as.numeric(Wb_est)
+WeightFracs <- data.frame(
+  Description = c("Payload", "Batteries", "Empty Weight", "120% * Initial Range Accuracy"),
+  Value = c(inp$Mp/inp$m, Wb/inp$m, 1 - inp$Mp/inp$m - Wb/inp$m,
+            (Wb_est - Wb)/Wb),
+  Target = c(NA, NA, 0.4, 0)
+)
+
+#--- SUMMARY
+summary <- rbind(
+  summary,
+  WeightFracs
+  )
+#--- SUMMARY
+summary <- rbind(
+  summary,
+  data.frame(
+    Description = BatteryFracs$type,
+    Value = BatteryFracs$`%Wi/Wb`,
+    Target = NA))
 
 ## Graphing Functions ======================================================================
 
