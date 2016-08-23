@@ -222,8 +222,6 @@ ClimbRatesFunction <- function(P, Cd0, rho, V, S, K, W) {
 
 # asdf <- ClimbRatesFunction(750000, 0.02, 1.225, 82.4, 18, 0.01538, 7500*9.81)
 
-
-
 ClimbRates <- function(inputvals, heights) {
   # Add in the various interested heights
   out <- data.frame(sapply(inputvals, rep.int, times = nrow(heights)))
@@ -266,3 +264,9 @@ ClimbRates <- function(inputvals, heights) {
     ) %>%
     group_by(type)
 }
+
+
+
+
+
+

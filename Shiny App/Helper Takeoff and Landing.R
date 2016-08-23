@@ -127,3 +127,72 @@ ggplot() +
   geom_hline(aes(yintercept = AccelerateLiftoff$AccelerateLiftoff, colour = "Accelerate-Liftoff")) +
   geom_hline(aes(yintercept = 1200, colour = "Maximum"))
   # In the future iteratively decrease the vstep until a solution is found for the curve intersections
+
+
+
+
+
+## Landing ======================================================================
+landing <- inputvals
+landing$type <- c("All Engines")
+landing$Ne <- c(0) # Change the last one from 0 to say -0.5 if reverse availalbe
+landing$mu <- c(as.double(filter(groundmu,names == "Dry Concrete") %>% select(brakeson)))
+landing <- landing %>%
+  mutate(h = 0) %>%
+  StandardAtomsphere(.) %>%
+  mutate(Vstall = Vmin(rho, W, S, Clmax + Clhls),
+         Vapp = 1.3 * Vstall,
+         Vfla = 1.15 * Vstall)
+
+# Need to find the upper 1.2 Vstall
+velocities <- seq(landing$Vfla[1], 0.0001, length.out = 50)
+landing <- landing[rep(row.names(landing),each=length(velocities)),1:length(landing)]
+rownames(landing) <- NULL
+landing$Vinf <- rep(velocities,1)
+
+landing$ClG <-  landing$ClG
+landing$Keff <-  Keff(landing$K, inputvals$hground, landing$b)
+landing <- landing %>%
+  mutate(Mach = Vinf/a, PA = PA(sigma, P0eng * Ne), TA = TA(PA, Vinf),
+         Cd = Cd(Cd0G, Keff, ClG), qinf = qinf(rho, Vinf),
+         D = D(qinf, S, Cd), L = L(qinf, S, ClG),
+         Ff = (W - L) * mu, Fnet = TA - D - Ff, accel = Fnet/(W/g),
+         arecip = 1/(2*accel), Vsq = Vinf^2) %>%
+  group_by(type) %>%
+  mutate(Area = 1/2 * (arecip + lag(arecip,1)) * (Vsq - lag(Vsq,1)),
+         Area = ifelse(is.na(Area), 0, Area),
+         Area = cumsum(Area),
+         Area = ifelse(is.na(Area), 0, Area))
+
+AirDistVals <- inputvals
+rownames(AirDistVals) <- NULL
+AirDistVals$type <- c("All Engines")
+AirDistVals$Ne <- c(2)
+AirDistVals <- AirDistVals %>%
+  mutate(h = 50*0.3) %>%
+  StandardAtomsphere(.) %>%
+  mutate(
+    Vstall = Vmin(rho, W, S, Clmax + Clhls),
+    Vinf = 1.3 * Vstall,
+    qinf = qinf(rho, Vinf),
+    gamma = 3,
+    L = W * cos(gamma * pi / 180),
+    Cl = L / (qinf * Vinf),
+    Cd = Cd0G + K * Cl^2,
+    D = D(qinf, S, Cd),
+    TR = D - W * sin(gamma * pi / 180),
+    PR = TR * Vinf,
+    R = Vinf^2 / (0.2 * g),
+    SF = R * sin(gamma * pi / 180),
+    hF = R * (1 - cos(gamma * pi / 180)),
+    SA = (50*0.3 - hF) / tan(gamma*pi/180))
+
+
+DeccelerateLand <- landing %>%
+  select(Vinf, Vapp, Vfla, type, Area) %>%
+  spread(type, Area)
+DeccelerateLand <- head(DeccelerateLand,1)
+DeccelerateLand$`Air Distance` = sum(AirDistVals %>% select(SA, SF))
+DeccelerateLand <- mutate(DeccelerateLand, DeccelerateLand = (`All Engines` + `Air Distance`) * 1.33)
+
+

@@ -545,7 +545,77 @@ shinyServer(function(input, output,session) {
         geom_hline(aes(yintercept = 1200, colour = "Maximum"))
     })
       
-      # In the future iteratively decrease the vstep until a solution is found for the curve intersections
+    # In the future iteratively decrease the vstep until a solution is found for the curve intersections
+  
+    
+    ## Landing ======================================================================
+    landing <- inputvals
+    landing$type <- c("All Engines")
+    landing$Ne <- c(0) # Change the last one from 0 to say -0.5 if reverse availalbe
+    landing$mu <- c(as.double(filter(groundmu,names == "Dry Concrete") %>% select(brakeson)))
+    landing <- landing %>%
+      mutate(h = 0) %>%
+      StandardAtomsphere(.) %>%
+      mutate(Vstall = Vmin(rho, W, S, Clmax + Clhls),
+             Vapp = 1.3 * Vstall,
+             Vfla = 1.15 * Vstall)
+    
+    # Need to find the upper 1.2 Vstall
+    velocities <- seq(landing$Vfla[1], 0.0001, length.out = 50)
+    landing <- landing[rep(row.names(landing),each=length(velocities)),1:length(landing)]
+    rownames(landing) <- NULL
+    landing$Vinf <- rep(velocities,1)
+    
+    landing$ClG <-  landing$ClG
+    landing$Keff <-  Keff(landing$K, inputvals$hground, landing$b)
+    landing <- landing %>%
+      mutate(Mach = Vinf/a, PA = PA(sigma, P0eng * Ne), TA = TA(PA, Vinf),
+             Cd = Cd(Cd0G, Keff, ClG), qinf = qinf(rho, Vinf),
+             D = D(qinf, S, Cd), L = L(qinf, S, ClG),
+             Ff = (W - L) * mu, Fnet = TA - D - Ff, accel = Fnet/(W/g),
+             arecip = 1/(2*accel), Vsq = Vinf^2) %>%
+      group_by(type) %>%
+      mutate(Area = 1/2 * (arecip + lag(arecip,1)) * (Vsq - lag(Vsq,1)),
+             Area = ifelse(is.na(Area), 0, Area),
+             Area = cumsum(Area),
+             Area = ifelse(is.na(Area), 0, Area))
+    
+    AirDistVals <- inputvals
+    rownames(AirDistVals) <- NULL
+    AirDistVals$type <- c("All Engines")
+    AirDistVals$Ne <- c(2)
+    AirDistVals <- AirDistVals %>%
+      mutate(h = 50*0.3) %>%
+      StandardAtomsphere(.) %>%
+      mutate(
+        Vstall = Vmin(rho, W, S, Clmax + Clhls),
+        Vinf = 1.3 * Vstall,
+        qinf = qinf(rho, Vinf),
+        gamma = 3,
+        L = W * cos(gamma * pi / 180),
+        Cl = L / (qinf * Vinf),
+        Cd = Cd0G + K * Cl^2,
+        D = D(qinf, S, Cd),
+        TR = D - W * sin(gamma * pi / 180),
+        PR = TR * Vinf,
+        R = Vinf^2 / (0.2 * g),
+        SF = R * sin(gamma * pi / 180),
+        hF = R * (1 - cos(gamma * pi / 180)),
+        SA = (50*0.3 - hF) / tan(gamma*pi/180))
+    
+    DeccelerateLand <- landing %>%
+      select(Vinf, Vapp, Vfla, type, Area) %>%
+      spread(type, Area)
+    DeccelerateLand <- head(DeccelerateLand,1)
+    DeccelerateLand$`Air Distance` = sum(AirDistVals %>% select(SA, SF))
+    DeccelerateLand <- mutate(DeccelerateLand, DeccelerateLand = (`All Engines` + `Air Distance`) * 1.33)
+    
+    output$RoughLanding <- renderPrint({
+      print("Approach Speed <51.44 m/s (100 kt)")
+      print.data.frame(DeccelerateLand)
+    })
+    
+    
   })
   
   observe({
@@ -597,7 +667,7 @@ shinyServer(function(input, output,session) {
              Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
              Rduration = ifelse(is.na(Rduration), 0, Rduration),
              R = cumsum(Rduration)) %>%
-      select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+      select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
     
     # Segment 3
     # Flying at constant altitude accelerating from V2 to VFS or 1.25 VS with flaps in TO
@@ -614,7 +684,8 @@ shinyServer(function(input, output,session) {
              Vstall = Vmin(rho, W, S, Clmax),
              qinf = qinf(rho, Vinf),
              PA = PA(sigma, P0),
-             TA = TA(PA, Vinf)) %>%
+             TA = TA(PA, Vinf),
+             theta = 0) %>%
       mutate(Cl = W/(qinf * S),
              Cd = Cd0 + K * Cl^2,
              ClCd = Cl/Cd,
@@ -630,7 +701,7 @@ shinyServer(function(input, output,session) {
              Rduration = 1/2 * (Vinf + lag(Vinf,1)) * duration,
              Rduration = ifelse(is.na(Rduration), 0, Rduration),
              R = cumsum(Rduration)) %>%
-      select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+      select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
     
     # Segment 4
     # Flying at climb speed Vcruise with landing gear up and flaps retracted
@@ -663,7 +734,7 @@ shinyServer(function(input, output,session) {
              Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
              Rduration = ifelse(is.na(Rduration), 0, Rduration),
              R = cumsum(Rduration)) %>%
-      select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+      select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
     
     
     Power <- rbind(Pseg2, Pseg3, Pseg4) %>%
@@ -671,6 +742,8 @@ shinyServer(function(input, output,session) {
              Eeng_total = cumsum(Eduration),
              R_total = cumsum(Rduration),
              Wb84_total = Eeng_total/(1e6 * 0.84))
+    
+    
     
     output$RoughPower <- renderPrint({
       print.data.frame(Power)
@@ -689,7 +762,19 @@ shinyServer(function(input, output,session) {
   
   ## General Weight Fractions ======================================================================
   observe({
+    inputvals <- 
+      data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
+                 Cd0 = input$Cd0, Clmax = input$Clmax, Clflaps = input$Clflaps, Clhls = input$Clhls,
+                 m = input$m, W = input$W, WS = input$WS,
+                 P0eng = input$P0eng, P0 = input$P0,
+                 ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
+      )
+    
     Wpp <- data.frame(WppW = 720 / input$m)
+    
+    # THIS ONE DOESN"T UPDATE
+    AeroParamsTable <- AeroParams(inputvals) %>%
+      select(type, h, Vinf, Vstall, Vsafe, qinf, Cl, Cd, ClCd, Clstar, Cd, Cdstar, ClCdstar, Vstar, Cl32, Cd32, ClCd32, V32)
     
     Wb <- filter(AeroParamsTable, type == "Cruise") %>%
       StandardAtomsphere(.) %>%

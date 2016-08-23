@@ -1,6 +1,8 @@
 #---Aircraft Performance
 library(shiny)
 
+source("Helper UI Functions.R")
+
 shinyUI(fluidPage(
   # Application title
   titlePanel("Aerospace Design"),
@@ -13,7 +15,7 @@ shinyUI(fluidPage(
       downloadButton("downloadData", "Download Inputs"),
       #
       h3("Wing Parameters"),
-      numericInput("S", "Wing Area (m^2)", 54.4),
+      numericInput("S", "Wing Area (m^2)", test),
       numericInput("b", "Wing Span (m)", 25.9),
       numericInput("AR", "Aspect Ratio (autocalculated if S, b given)", 12.3),
       numericInput("e", "Span Efficiency", 0.80),
@@ -56,7 +58,7 @@ shinyUI(fluidPage(
                  plotOutput("AeroParamsPlot", click = "APP_click", dblclick = "APP_dblclick",
                             hover = "APP_hover", brush = "APP_brush"),
                  verbatimTextOutput("APP_info")
-                 ),
+        ),
         
         #---Operating Window
         tabPanel("Operating Window",
@@ -71,7 +73,7 @@ shinyUI(fluidPage(
                  plotOutput("OWP_plot", click = "OWP_click", dblclick = "OWP_dblclick",
                             hover = "OWP_hover", brush = "OWP_brush"),
                  verbatimTextOutput("OWP_info")
-                 ),
+        ),
         
         #---Power and Thrust Curves
         tabPanel("Power & Thrust",
@@ -92,7 +94,7 @@ shinyUI(fluidPage(
                  verbatimTextOutput("PR_info"),
                  plotOutput("TR_plot", click = "TR_click", hover = "TR_hover"),
                  verbatimTextOutput("TR_info")
-                 ),
+        ),
         tabPanel("Climb",
                  plotOutput("PG_plot", click = "PG_click", hover = "PG_hover"),
                  plotOutput("CA_plot", click = "CA_click", hover = "CA_hover"),

@@ -38,7 +38,7 @@ Pseg2 <- cbind(inputvals, h = Pseg2Heights, type = "2nd Segment Climb") %>%
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
 
 # Segment 3
 # Flying at constant altitude accelerating from V2 to VFS or 1.25 VS with flaps in TO
@@ -55,7 +55,8 @@ Pseg3 <- Pseg3 %>%
          Vstall = Vmin(rho, W, S, Clmax),
          qinf = qinf(rho, Vinf),
          PA = PA(sigma, P0),
-         TA = TA(PA, Vinf)) %>%
+         TA = TA(PA, Vinf),
+         theta = 0) %>%
   mutate(Cl = W/(qinf * S),
          Cd = Cd0 + K * Cl^2,
          ClCd = Cl/Cd,
@@ -71,7 +72,7 @@ Pseg3 <- Pseg3 %>%
          Rduration = 1/2 * (Vinf + lag(Vinf,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
 
 # Segment 4
 # Flying at climb speed Vcruise with landing gear up and flaps retracted
@@ -104,7 +105,7 @@ Pseg4 <- cbind(inputvals, h = Pseg4Heights, type = "4th Segment Climb") %>%
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
 
 
 Power <- rbind(Pseg2, Pseg3, Pseg4) %>%
