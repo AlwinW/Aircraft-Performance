@@ -153,7 +153,7 @@ AeroParams <- function(inputvals) {
     Cl32 = Cl32(Clstar),
     Cd32 = Cd32(Cdstar),
     ClCd32 = ClCd32(ClCdstar),
-    V32 = (Vstar)
+    V32 = V32(Vstar)
     )
 }
 
