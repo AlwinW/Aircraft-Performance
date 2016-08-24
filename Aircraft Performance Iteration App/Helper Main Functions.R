@@ -51,7 +51,7 @@ ClimbRatesFunction <- function(P, Cd0, rho, V, S, K, W) {
 # THIS IS FOR CALCULATING SINGLE VALUES THAT WILL THEN GO INTO THE ITERATION FUNCTION
 # Do not put graphing functions here!!
 
-MainIterationFunction <- function(inputvals, specifications, resolution = 10, out = "Iteration") {
+MainIterationFunction <- function(inputvals, specifications, resolution = 10, out = "Iteration", updateProgress = NULL) {
   #--- Manipulate the data into a meaningful form
   inp  <- t(specifications["Value"])
   colnames(inp) <- t(specifications["Variable"])
@@ -123,6 +123,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
          inp$Vappmax
           )
      ))
+  
+  if (is.function(updateProgress)) {
+    text <- paste0("Aerodynamic Parameters")
+    updateProgress(detail = text, value = 1)
+  }
   
 ## Takeoff ======================================================================
   #--- Determine the distance required for takeoff
@@ -229,6 +234,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
          NA)
       ))
   
+  if (is.function(updateProgress)) {
+    text <- paste0("Takeoff")
+    updateProgress(detail = text, value = 2)
+  }
+  
 ## Climb ======================================================================
   #--- Determine the various climb rates required
   # Create a data frame of the three scenarios
@@ -271,6 +281,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
         inp$ClimbCeil
       )
     ))
+  
+  if (is.function(updateProgress)) {
+    text <- paste0("Climb")
+    updateProgress(detail = text, value = 3)
+  }
   
 ## Landing ======================================================================
   #--- Determine the distance required for landing
@@ -335,6 +350,10 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
                      Value = c(DeccelerateLand$`Deccelerate-Land`),
                      Target = c(inp$Srun)
                    ))
+  if (is.function(updateProgress)) {
+    text <- paste0("Landing")
+    updateProgress(detail = text, value = 4)
+  }
   
 ## Power ======================================================================
   #--- Take-off 
@@ -384,6 +403,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Power = PA) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
   
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Ground Roll")
+    updateProgress(detail = text, value = 5)
+  }
+  
   #--- Climb Segments
   # Segment 1
   # Flying at climb speed VTR with landing gear up and flaps in takeoff position to clear Hobs if not already
@@ -413,6 +437,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            R = cumsum(Rduration),
            Power = PA) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+  
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Segment 1")
+    updateProgress(detail = text, value = 6)
+  }
   
   # Segment 2
   # Flying at climb speed V2 with landing gear up and flaps in takeoff position
@@ -447,6 +476,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Power = PA) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
   
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Segment 2")
+    updateProgress(detail = text, value = 7)
+  }
+  
   # Segment 3
   # Flying at constant altitude accelerating from V2 to VFS or 1.25 VS with flaps in TO
   Pseg3num <- resolution * 5
@@ -480,6 +514,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Power = PA) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
   
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Segment 3")
+    updateProgress(detail = text, value = 8)
+  }
+  
   # Segment 4
   # Flying at climb speed Vcruise with landing gear up and flaps retracted
   Pseg4num <- resolution * 8
@@ -512,6 +551,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            R = cumsum(Rduration),
            Power = PA) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+  
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Segment 4")
+    updateProgress(detail = text, value = 9)
+  }
   
   #--- Descent
   Pdes4num = resolution * 8
@@ -569,6 +613,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Power = PR) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
   
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Descent")
+    updateProgress(detail = text, value = 10)
+  }
+  
   #--- Landing
   # Flare
   PLDfl <- AirDistLD %>%
@@ -597,6 +646,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Power = PR) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
   
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Flare")
+    updateProgress(detail = text, value = 11)
+  }
+  
   # Ground Roll 
   PLDgr <- out4 %>%
     ungroup %>%
@@ -615,6 +669,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            R = cumsum(Rduration),
            Power = PA) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+  
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Ground Roll")
+    updateProgress(detail = text, value = 12)
+  }
   
   #--- Cruise
   Scruise <- inp$Range - tail(PTOgr$R,1) - tail(PTOtr$R,1) -
@@ -641,6 +700,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Power = PR) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
 
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Cruise")
+    updateProgress(detail = text, value = 13)
+  }
+  
   #--- Total
   Power <- rbind(PTOgr, PTOtr, Pseg1, Pseg2, Pseg3, Pseg4, Pcr, Pdes, PLDfl, PLDgr) %>%
     mutate(t_total = cumsum(duration),
@@ -651,6 +715,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Vb = Wb_total/inp$Dens)
   PowerSummary <- Power %>%
     select(type, Vinf, Vstall, Clmax, Cl, Cd, ClCd, theta, Power, t_total, Eeng_total, Wb_total, Vb)
+  
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Total")
+    updateProgress(detail = text, value = 14)
+  }
   
   #--- Battery Fracs
   BatteryFracs <- Power %>%
@@ -672,6 +741,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     Target = c(NA, NA, 0.40, 0)
   )
   
+  if (is.function(updateProgress)) {
+    text <- paste0("Power - Fractions")
+    updateProgress(detail = text, value = 15)
+  }
+  
   #--- SUMMARY
   summary <- rbind(summary,
                    WeightFracs)
@@ -684,6 +758,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
                 AccelerateLiftoff = AccelerateLiftoff, BFL = BFL,
                 out3 = out3, out4 = out4, DeccelerateLand = DeccelerateLand,
                 WeightFracs = WeightFracs, BatteryFracs = BatteryFracs, Power = Power, PowerSummary = PowerSummary))
+  
+  if (is.function(updateProgress)) {
+    text <- paste0("Done")
+    updateProgress(detail = text, value = 20)
+  }
 }
 ## Plotting Functions ======================================================================
 AeroParamsFunction <- function(inputvals, specifications){

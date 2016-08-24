@@ -108,7 +108,22 @@ shinyServer(function(session, input, output) {
                  ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
       )
     
-    MainIterationOut <- suppressWarnings(MainIterationFunction(inputvals, specifications, out = "All"))
+    # Create a Progress object
+    progress <- shiny::Progress$new()
+    progress$set(message = "Computing:", value = 0)
+    # Close the progress when this reactive exits (even if there's an error)
+    on.exit(progress$close())
+    # Create a callback function to update progress.
+    
+      updateProgress <- function(value = NULL, detail = NULL) {
+        if (is.null(value)) {
+          value <- progress$getValue()
+          value <- value + (20 - value) / 5
+        }
+        progress$set(value = value, detail = detail)
+      }
+    
+    MainIterationOut <- suppressWarnings(MainIterationFunction(inputvals, specifications, out = "All", updateProgress = updateProgress))
     
 ## Summary ======================================================================
     output$SummaryTable <- renderDataTable({

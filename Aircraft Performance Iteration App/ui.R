@@ -1,6 +1,7 @@
 #---Aircraft Performance
 library(shiny)
 library(shinyAce)
+library(rsconnect)
 
 # Set the initial values
 source("Helper UI Functions.R")
