@@ -680,12 +680,13 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     return(summary)
   else if (out == "All")
     return(list(summary = summary, out1 = out1, AeroParamsTable = AeroParamsTable,
-                out2 = out2, AccelerateStop = AccelerateStop, AccelerateContinue = AccelerateContinue, AccelerateLiftoff, BFL,
+                out2 = out2, AccelerateStop = AccelerateStop, AccelerateContinue = AccelerateContinue, 
+                AccelerateLiftoff = AccelerateLiftoff, BFL = BFL,
                 out3 = out3, out4 = out4, DeccelerateLand = DeccelerateLand,
                 WeightFracs = WeightFracs, BatteryFracs = BatteryFracs, Power = Power, PowerSummary = PowerSummary))
 }
-## Graphing Functions ======================================================================
-MainGraphingFunction <- function(inputvals, specifications){
+## Plotting Functions ======================================================================
+AeroParamsFunction <- function(inputvals, specifications){
   #--- Manipulate the data into a meaningful form
   inp  <- t(specifications["Value"])
   colnames(inp) <- t(specifications["Variable"])
@@ -721,8 +722,54 @@ MainGraphingFunction <- function(inputvals, specifications){
            AeroParamsPlotPoints$Cdstar, AeroParamsPlotPoints$Cd32)
   )
   
+  #---Power and Thrust
+  
   return(list(AeroParamsPlot = AeroParamsPlot, 
               AeroParamsPlotPoints = AeroParamsPlotPoints))
 }
 
-
+ClimbFunction <- function(inputvals, specifications, heights) {
+  #--- Manipulate the data into a meaningful form
+  inp  <- t(specifications["Value"])
+  colnames(inp) <- t(specifications["Variable"])
+  inp <- cbind(inputvals, inp)
+  # Add in the various interested heights
+  out <- inp[rep(row.names(inp), each = nrow(heights)), 1:length(inp)]
+  out$type <- heights$type
+  out$h <- heights$h
+  # Add in the standard atmosphere values
+  out <- StandardAtomsphere(out) %>%
+    mutate(
+      Vflaps = Vmin(rho, WS, Clclean + Clflaps),
+      Vmin = Vmin(rho, WS, Clclean), 
+      Vcruise = Mach*a) %>%
+    ungroup() %>%
+    rowwise() %>%
+    do(data.frame(.,
+        Vinf = c(
+          seq(.$Vflaps, .$Vmin, length.out = 10),
+          seq(.$Vmin, .$Vmin * 1.2, length.out = 10),
+          seq(.$Vmin * 1.2, .$Vcruise, length.out = 10),
+          seq(.$Vcruise, .$Vcruise * 2, length.out = 20)),
+        Vname = c(
+          "Vflaps", rep("Vinf", 8), "Vstall",
+          "Vstall", rep("Vinf", 8),"Vsafe",
+          "Vsafe", rep("Vinf", 8), "Vcruise",
+          "Vcruise", rep("Vinf", 19))
+    )) %>%
+    arrange(h, Vinf) %>%
+    distinct(.keep_all = TRUE) %>%
+    select(-Vmin,-Vcruise) %>%
+    ungroup() %>%
+    rowwise() %>%
+    mutate(
+      qinf = 1/2 * rho * Vinf^2,
+      Cl = W / (qinf * S),
+      Cd = Cd0 + K * Cl^2,
+      D = qinf * S * Cd,
+      PA = PA(P0, sigma),
+      TA = PA / Vinf) %>%
+    do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W))) %>%
+    ungroup() %>%
+    group_by(type)
+}

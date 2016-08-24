@@ -109,7 +109,6 @@ shinyServer(function(session, input, output) {
       )
     
     MainIterationOut <- suppressWarnings(MainIterationFunction(inputvals, specifications, out = "All"))
-    MainGraphsOut <- suppressWarnings(MainGraphingFunction(inputvals, specifications))
     
 ## Summary ======================================================================
     output$SummaryTable <- renderDataTable({
@@ -117,16 +116,18 @@ shinyServer(function(session, input, output) {
     })
     
 ## AeroParams ======================================================================
+    AeroParams <- suppressWarnings(AeroParamsFunction(inputvals, specifications))
+    
     output$AeroParamsTable <- renderDataTable({
       MainIterationOut$AeroParamsTable
     })
     
     output$AeroParamsPlot <- renderPlot({
-      slope = MainGraphsOut$AeroParamsPlotPoints$Cl[3]/MainGraphsOut$AeroParamsPlotPoints$Cd[3]
-      ggplot(MainGraphsOut$AeroParamsPlotPoints,
+      slope = AeroParams$AeroParamsPlotPoints$Cl[3]/AeroParams$AeroParamsPlotPoints$Cd[3]
+      ggplot(AeroParams$AeroParamsPlotPoints,
              aes(x = Cd, y = Cl, colour = type)) +
         geom_abline(intercept = 0, slope = slope, colour = "green4") + 
-        geom_line(data = MainGraphsOut$AeroParamsPlot,
+        geom_line(data = AeroParams$AeroParamsPlot,
                   aes(x = Cd, y = Cl, colour = "Drag Polar")) +
         geom_point() + 
         geom_text(aes(label = paste0(type, " Vinf = ", round(Vinf, 4))), hjust = 1, vjust = -0.5, show.legend = FALSE) + 
@@ -141,6 +142,105 @@ shinyServer(function(session, input, output) {
       paste0("click: ", xy_str(input$APP_click), "hover: ", xy_str(input$APP_hover)
       )
     })
+    
+    
+## Climb ======================================================================
+    heights <- data.frame(type = c("Sea Level", "2nd Seg Climb", "3rd Seg Accel", "Cruise", "Ceiling"),
+                          h = c(0, 35*0.3048, 400*0.3048, 10000*0.3048, 12000*0.3048))
+    Climb <- ClimbFunction(inputvals, specifications, heights)
+    Climb$type <- factor(Climb$type, levels = heights$type, ordered = TRUE)
+    
+    # Graph of Percentage Gradients
+    output$PerGradPlot <- renderPlot({
+      ggplot(Climb, aes(x=Vinf, y=PerGrad, group = type, colour = type)) + 
+        geom_path() + 
+        geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
+        geom_hline(aes(yintercept = 1.5, colour = "2nd Seg Climb")) +
+        geom_text(aes(x = min(Vinf), y = 1.5, colour = "2nd Seg Climb"), 
+                  label = "Minimum 2nd Seg Climb", hjust = 0, vjust = 1.5,
+                  show.legend = FALSE) + 
+        scale_size(range = c(0,3)) + 
+        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
+        guides(size = FALSE) +
+        labs(list(title = "Percentage Graidents", x = "Vinf (m/s)", y = "Percentage Gradient (%)", 
+                  colour = "Mission Segment", shape = "Velocity"))
+    })
+    
+    output$ClimbRatePlot <- renderPlot({
+      ggplot(Climb, aes(x=Vinf, ClimbRate / 0.3 * 60, group = type, colour = type)) + 
+        geom_path() + 
+        geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
+        geom_hline(aes(yintercept = 100, colour = "Ceiling")) +
+        geom_text(aes(x = min(Vinf), y = 100, colour = "Ceiling"), 
+                  label = "Minimum Ceiling Rate of Climb", hjust = 0, vjust = 1.5,
+                  show.legend = FALSE) + 
+        geom_hline(aes(yintercept = 300, colour = "Cruise")) +
+        geom_text(aes(x = min(Vinf), y = 300, colour = "Cruise"), 
+                  label = "Minimum Cruise Rate of Climb", hjust = 0, vjust = 1.5,
+                  show.legend = FALSE) + 
+        scale_size(range = c(0,3)) + 
+        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
+        guides(size = FALSE) +
+        labs(list(title = "Climb Rates (Vv)", x = "Vinf (m/s)", y = "Climb Rate (ft/min)", 
+                  colour = "Mission Segment", shape = "Velocity"))
+    })
+    
+    output$ClimbAnglePlot<- renderPlot({
+      ggplot(Climb, aes(x=Vinf, Theta, group = type, colour = type)) + 
+        geom_path() + 
+        geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
+        scale_size(range = c(0,3)) + 
+        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
+        guides(size = FALSE) +
+        labs(list(title = "Climb Angle (Theta)", x = "Vinf (m/s)", y = "Theta (degrees)", 
+                  colour = "Mission Segment", shape = "Velocity"))
+    })
+    
+    heightsall <- data.frame(type = seq(0, 4000, 250),
+                             h = seq(0, 4000, 250))
+    Climball <- ClimbFunction(inputvals, specifications, heightsall)
+    output$ClimbRateAllPlot <- renderPlot({
+      ggplot(Climball, aes(x=Vinf, ClimbRate / 0.3 * 60, group = type, colour = type)) + 
+        geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
+        scale_size(range = c(0,3)) + 
+        scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
+        guides(size = FALSE) +
+        labs(list(title = "Climb Rates At Various Altitudes (Vv)", x = "Vinf (m/s)", y = "Climb Rate (ft/min)", 
+                  colour = "Mission Segment", shape = "Velocity"))
+    })
+    
+## Takeoff ======================================================================
+    Takeoff <- MainIterationOut[c("AccelerateStop","AccelerateContinue", "AccelerateLiftoff", "BFL")]
+    BFL <- Takeoff$BFL
+    Takeoff <- data.frame(
+                     Vinf = Takeoff$AccelerateStop$Vinf, 
+                     `AccelerateStop` = Takeoff$AccelerateStop$AccelerateStop,
+                     `AccelerateContinue` = Takeoff$AccelerateContinue$AccelerateContinue, 
+                     `AccelerateLiftoff` = Takeoff$AccelerateLiftoff$AccelerateLiftoff)
+    Takeoff <- Takeoff %>% gather(key, value, - Vinf)
+    
+    output$TakeoffFieldLengthPlot <- renderPlot({
+      ggplot(Takeoff, aes(x = Vinf, y = value, colour = key)) +
+        geom_line() + 
+        geom_text(aes(x = 0, y = as.double(tail(filter(Takeoff, key == "AccelerateLiftoff"),1)$value), 
+                      colour = "AccelerateLiftoff"), 
+                  label = "1.15 x Runway Distance for \nNormal Takeoff with 2 Engines", hjust = 0, vjust = 1.1,
+                  show.legend = FALSE) +
+        geom_hline(aes(yintercept = 1200, colour = "Maximum")) +
+        geom_text(aes(x = 0, y = 1200, colour = "Maximum"), 
+                  label = "Maximum Runway Length", hjust = 0, vjust = -0.5,
+                  show.legend = FALSE) +
+        geom_hline(aes(yintercept = BFL$BFL, colour = "BFL"), linetype = "dotted", show.legend = FALSE) + 
+        geom_vline(aes(xintercept = BFL$Vinf, colour = "BFL"), linetype = "dotted", show.legend = FALSE) +
+        geom_point(data = BFL, aes(x = Vinf, y = BFL, colour = "BFL")) +
+        geom_text(aes(x = BFL$Vinf, y = 0, colour = "BFL"), 
+                  label = "V1", hjust = 0.5, vjust = 0,
+                  show.legend = FALSE) +
+        labs(list(title = "Takeoff Runway Balanced Field Length", 
+                  x = "Velocity at Engine Loss (m/s)", y = "Runway Distance Required (m)", 
+                  colour = "Scenario"))
+    })
+    
     
 ## Mission Analysis ======================================================================
     output$PowerSummary <- renderPlot({

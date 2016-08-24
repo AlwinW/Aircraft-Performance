@@ -127,8 +127,8 @@ shinyUI(fluidPage(
       #
       tabPanel("Climb",
                plotOutput("PerGradPlot", click = "PG_click", hover = "PG_hover"),
-               plotOutput("ClimbAnglePlot", click = "CA_click", hover = "CA_hover"),
                plotOutput("ClimbRatePlot", click = "CR_click", hover = "CR_hover"),
+               plotOutput("ClimbAnglePlot", click = "CA_click", hover = "CA_hover"),
                plotOutput("ClimbRateAllPlot", click = "CRa_click", hover = "PG_hover")),
       #
       tabPanel("Takeoff Field Length",
