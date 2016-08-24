@@ -39,7 +39,7 @@ ClimbRatesFunction <- function(P, Cd0, rho, V, S, K, W) {
 # THIS IS FOR CALCULATING SINGLE VALUES THAT WILL THEN GO INTO THE ITERATION FUNCTION
 # Do not put graphing functions here!!
 
-BadassIterationSummary <- function(inputvals, specifications){
+MainIterationFunction <- function(inputvals, specifications, resolution = 10, out = "Iteration") {
   inp  <- t(specifications["Value"])
   colnames(inp) <- t(specifications["Variable"])
   inp <- cbind(inputvals, inp)
@@ -304,7 +304,6 @@ BadassIterationSummary <- function(inputvals, specifications){
     ))
   
   ## Power ======================================================================
-  ## DONT FORGET THE 1.05% SAFETY MARGIN!!!!! #########################################################
   #--- Take-off 
   # Ground Roll 
   PTOgr <- filter(out2, type == "All Engines") %>%
@@ -484,8 +483,19 @@ BadassIterationSummary <- function(inputvals, specifications){
   #--- Descent
   Pdes4num = 20
   PdesHeights <- seq(inp$AltCruise, 50*0.3048, length.out = Pdes4num)
-  PdesVelocities <- seq(as.double(filter(AeroParamsTable, type == "Cruise") %>% select(Vinf)), AirDistLD$Vapp, length.out = Pdes4num)
-  
+  Vcr <- as.double(filter(AeroParamsTable, type == "Cruise") %>% select(Vinf))
+  PdesVelocities <- seq(Vcr, AirDistLD$Vapp, length.out = Pdes4num)
+  Pcr <- as.double(
+    filter(out1, type == "Cruise") %>%
+      mutate(D = qinf * S * Cd,
+             PR = D * Vinf) %>%
+      select(PR)
+  )
+  PdesPowers <- c(
+    seq(Pcr, 1/8 * Pcr + 7/8* 0.05*inp$P0, length.out = ceiling(Pdes4num/8)),
+    seq(1/8 * Pcr + 7/8* 0.05*inp$P0, 0.05*inp$P0, length.out = Pdes4num - ceiling(Pdes4num/8))
+  )
+  # seq(1, 0, length.out = Pdes4num)^(6) * (Pcr - 0.1*inp$P0) + 0.1*inp$P0
   
   Pdes <- inp
   Pdes$type <- "Descent"
@@ -494,6 +504,7 @@ BadassIterationSummary <- function(inputvals, specifications){
   rownames(Pdes) <- NULL
   Pdes$h <- PdesHeights
   Pdes$Vinf <- PdesVelocities
+  Pdes$Pthrot <- PdesPowers
   
   Pdes <- Pdes %>%
     StandardAtomsphere(.) %>%
@@ -502,12 +513,12 @@ BadassIterationSummary <- function(inputvals, specifications){
       Clmax = Clclean + Clhls,
       Vstall = Vmin(rho, WS, Clmax),
       qinf = 1/2 * rho * Vinf^2,
-      theta = max(-3, ClimbRatesFunction(0.000*P0, Cd0, rho, Vinf, S, K, W)[[1]]),
+      theta = max(-3, ClimbRatesFunction(Pthrot, Cd0, rho, Vinf, S, K, W)[[1]]),
       L = W * cos(theta * pi / 180),
       Cl = L / (qinf * S),
       Cd = Cd0 + K * Cl^2,
       D = qinf * S * Cd,
-      TR = D - W * sin(theta * pi / 180),
+      TR = D + W * sin(theta * pi / 180),
       PR = TR * Vinf) %>%
     mutate(
       Vv = Vinf * sin(theta * pi/ 180),
@@ -525,8 +536,9 @@ BadassIterationSummary <- function(inputvals, specifications){
            Wb100 = Eeng / 1e6,
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
-           R = cumsum(Rduration)) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PR)
+           R = cumsum(Rduration),
+           PA = PR) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
   
   #--- Landing
   # Flare
@@ -553,8 +565,9 @@ BadassIterationSummary <- function(inputvals, specifications){
            Wb100 = Eeng / 1e6,
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
-           R = cumsum(Rduration)) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PR)
+           R = cumsum(Rduration),
+           PA = PR) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
   
   # Ground Roll 
   PLDgr <- out4 %>%
@@ -587,7 +600,7 @@ BadassIterationSummary <- function(inputvals, specifications){
            duration = Scruise/Vinf)
   Pcr <- Pcr[rep(row.names(Pcr), each = 2), 1:length(Pcr)]
   Pcr$duration <- c(0, Pcr$duration[2])
-   
+  
   Pcr <- Pcr %>%
     mutate(t = cumsum(duration),
            Eduration = 1/2 * (PR + lag(PR,1)) * duration,
@@ -596,17 +609,18 @@ BadassIterationSummary <- function(inputvals, specifications){
            Wb100 = Eeng / 1e6,
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
-           R = cumsum(Rduration)) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PR)
+           R = cumsum(Rduration),
+           PA = PR) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
   
   #--- Total
   Power <- rbind(PTOgr, PTOtr, Pseg1, Pseg2, Pseg3, Pseg4, Pcr, Pdes, PLDfl, PLDgr) %>%
     mutate(t_total = cumsum(duration),
            Eeng_total = cumsum(Eduration),
            R_total = cumsum(Rduration),
-           Wb84_total = Eeng_total/(inp$E * 0.84),
-           Wb84_total = Wb84_total * 1.05,
-           Vb = Wb84_total/inp$Dens)
+           Wb80_total = Eeng_total/(inp$E * 0.80),
+           Wb80_total = Wb80_total * 1.05,
+           Vb = Wb80_total/inp$Dens)
   
   #--- Battery Fracs
   BatteryFracs <- Power %>%
@@ -614,10 +628,10 @@ BadassIterationSummary <- function(inputvals, specifications){
     top_n(1, t) %>%
     ungroup() %>%
     mutate(`%Wi/Wb` = Eeng/max(Eeng_total)*100,
-           `Wi/W` = Wb100 / 0.84 * 1.05 / inp$W)
-  Wb <- max(BatteryFracs$Wb84_total)
+           `Wi/W` = Wb100 / 0.80 * 1.05 / inp$W)
+  Wb <- max(BatteryFracs$Wb80_total)
   Wb_est <- filter(out1, type == "Cruise") %>%
-    mutate(D = qinf * Cd * S, Wb = D / 0.84 * 1.05 * 1.20) %>%
+    mutate(D = qinf * Cd * S, Wb = D / 0.80 * 1.05 * 1.1) %>%
     ungroup() %>%
     select(Wb)
   Wb_est <- as.numeric(Wb_est)
@@ -627,6 +641,7 @@ BadassIterationSummary <- function(inputvals, specifications){
               (Wb_est - Wb)/Wb),
     Target = c(NA, NA, 0.4, 0)
   )
+  
   
   #--- SUMMARY
   summary <- rbind(
@@ -641,7 +656,13 @@ BadassIterationSummary <- function(inputvals, specifications){
       Value = BatteryFracs$`%Wi/Wb`,
       Target = NA))
   
-  return(summary)
+  if (out == "Iteration")
+    return(summary)
+  else if (out == "All")
+    return(list(summary = summary, out1 = out1, AeroParamsTable = AeroParamsTable,
+                out2 = out2, AccelerateStop = AccelerateStop, AccelerateContinue = AccelerateContinue, AccelerateLiftoff,
+                out3 = out3, out4 = out4, DeccelerateLand = DeccelerateLand,
+                Power = Power))
 }
 ## Graphing Functions ======================================================================
 

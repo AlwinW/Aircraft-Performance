@@ -88,10 +88,10 @@ shinyUI(fluidPage(
                column(6,numericInput("OW_nv","Number of Velocity Points", 51),
                       numericInput("OW_maxv", "Maximum Velocity", 200)),
                p("Things can get quite wacky. Play around with the maximum height unitl it works"),
-               plotOutput("OWV_plot", click = "OWV_click", dblclick = "OWV_dblclick",
+               plotOutput("OperatingWindowPlot", click = "OWV_click", dblclick = "OWV_dblclick",
                           hover = "OWV_hover", brush = "OWV_brush"),
                verbatimTextOutput("OWV_info"),
-               plotOutput("OWP_plot", click = "OWP_click", dblclick = "OWP_dblclick",
+               plotOutput("OperatingWindowPowerPlot", click = "OWP_click", dblclick = "OWP_dblclick",
                           hover = "OWP_hover", brush = "OWP_brush"),
                verbatimTextOutput("OWP_info")),
       #
@@ -105,24 +105,24 @@ shinyUI(fluidPage(
                p("Legend: Cirlces indicate lowest power and triangles indicate lowest thrust. 
                Red marks stall speed and orange marks a safety factor applied to the stall speed."),
                p("NOTE: The lowest power maximises the endurance, not the range!"),
-               plotOutput("Pe_plot", click = "Pe_click", hover = "Pe_hover"),
+               plotOutput("PowerExcessPlot", click = "Pe_click", hover = "Pe_hover"),
                verbatimTextOutput("Pe_info"),
-               plotOutput("Te_plot", click = "Te_click", hover = "Te_hover"),
+               plotOutput("ThrustExcessPlot", click = "Te_click", hover = "Te_hover"),
                verbatimTextOutput("Te_info"),
-               plotOutput("PR_plot", click = "PR_click", hover = "PR_hover"),
+               plotOutput("PowerRequiredPlot", click = "PR_click", hover = "PR_hover"),
                verbatimTextOutput("PR_info"),
-               plotOutput("TR_plot", click = "TR_click", hover = "TR_hover"),
+               plotOutput("ThrustRequiredPlot", click = "TR_click", hover = "TR_hover"),
                verbatimTextOutput("TR_info")
       ),
       #
       tabPanel("Climb",
-               plotOutput("PG_plot", click = "PG_click", hover = "PG_hover"),
-               plotOutput("CA_plot", click = "CA_click", hover = "CA_hover"),
-               plotOutput("CR_plot", click = "CR_click", hover = "CR_hover"),
-               plotOutput("CRa_plot", click = "CRa_click", hover = "PG_hover")),
+               plotOutput("PerGradPlot", click = "PG_click", hover = "PG_hover"),
+               plotOutput("ClimbAnglePlot", click = "CA_click", hover = "CA_hover"),
+               plotOutput("ClimbRatePlot", click = "CR_click", hover = "CR_hover"),
+               plotOutput("ClimbRateAllPlot", click = "CRa_click", hover = "PG_hover")),
       #
       tabPanel("Takeoff Field Length",
-               plotOutput("TFL_plot", click = "TFL_click", hover = "TFL_hover"),
+               plotOutput("TakeoffFieldLengthPlot", click = "TFL_click", hover = "TFL_hover"),
                dataTableOutput("TFLout"),
                verbatimTextOutput("RoughLanding")),
       #
@@ -131,7 +131,9 @@ shinyUI(fluidPage(
                dataTableOutput("GenWeightFracs2"),
                verbatimTextOutput("RoughPower")),
       #
-      tabPanel("Summary", verbatimTextOutput("summary")),
+      tabPanel("Power Calculations", 
+               dataTableOutput("PowerTable"),
+               verbatimTextOutput("summary")),
       tabPanel("Table", tableOutput("table"))
     )
   )

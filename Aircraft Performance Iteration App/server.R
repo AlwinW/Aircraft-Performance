@@ -11,6 +11,7 @@ library(RColorBrewer)
 
 #--- Set the initial values
 source("Helper UI Functions.R")
+source("Helper Main Functions.R")
 
 ## Server ======================================================================
 shinyServer(function(session, input, output) {
@@ -100,6 +101,13 @@ shinyServer(function(session, input, output) {
                  P0eng = input$P0eng, P0 = input$P0,
                  ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
       )
+    
+    MainIterationOut <- MainIterationFunction(inputvals, specifications, out = "All")
+    
+    output$PowerTable <- renderDataTable({
+      print.data.frame(MainIterationOut$Power)
+    })
+    
   })
   
   

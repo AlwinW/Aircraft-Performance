@@ -246,7 +246,7 @@ AirDistLD <- AirDistLD %>%
     Cl = L / (qinf * S),
     Cd = Cd0G + K * Cl^2,
     D = qinf * S * Cd,
-    TR = D - W * sin(gamma * pi / 180),
+    TR = D + W * sin(gamma * pi / 180),
     PR = TR * Vapp,
     R = Vapp^2 / (0.2 * g),
     SF = R * sin(gamma * pi / 180),
@@ -482,8 +482,19 @@ Pseg4 <- cbind(inp, h = Pseg4Heights, type = "4th Segment Climb") %>%
 #--- Descent
 Pdes4num = 20
 PdesHeights <- seq(inp$AltCruise, 50*0.3048, length.out = Pdes4num)
-PdesVelocities <- seq(as.double(filter(AeroParamsTable, type == "Cruise") %>% select(Vinf)), AirDistLD$Vapp, length.out = Pdes4num)
-
+Vcr <- as.double(filter(AeroParamsTable, type == "Cruise") %>% select(Vinf))
+PdesVelocities <- seq(Vcr, AirDistLD$Vapp, length.out = Pdes4num)
+Pcr <- as.double(
+  filter(out1, type == "Cruise") %>%
+  mutate(D = qinf * S * Cd,
+         PR = D * Vinf) %>%
+  select(PR)
+)
+PdesPowers <- c(
+  seq(Pcr, 1/8 * Pcr + 7/8* 0.05*inp$P0, length.out = ceiling(Pdes4num/8)),
+  seq(1/8 * Pcr + 7/8* 0.05*inp$P0, 0.05*inp$P0, length.out = Pdes4num - ceiling(Pdes4num/8))
+)
+  # seq(1, 0, length.out = Pdes4num)^(6) * (Pcr - 0.1*inp$P0) + 0.1*inp$P0
 
 Pdes <- inp
 Pdes$type <- "Descent"
@@ -492,6 +503,7 @@ Pdes <- Pdes[rep(row.names(Pdes), each = Pdes4num), 1:length(Pdes)]
 rownames(Pdes) <- NULL
 Pdes$h <- PdesHeights
 Pdes$Vinf <- PdesVelocities
+Pdes$Pthrot <- PdesPowers
 
 Pdes <- Pdes %>%
   StandardAtomsphere(.) %>%
@@ -500,12 +512,12 @@ Pdes <- Pdes %>%
     Clmax = Clclean + Clhls,
     Vstall = Vmin(rho, WS, Clmax),
     qinf = 1/2 * rho * Vinf^2,
-    theta = max(-3, ClimbRatesFunction(0.000*P0, Cd0, rho, Vinf, S, K, W)[[1]]),
+    theta = max(-3, ClimbRatesFunction(Pthrot, Cd0, rho, Vinf, S, K, W)[[1]]),
     L = W * cos(theta * pi / 180),
     Cl = L / (qinf * S),
     Cd = Cd0 + K * Cl^2,
     D = qinf * S * Cd,
-    TR = D - W * sin(theta * pi / 180),
+    TR = D + W * sin(theta * pi / 180),
     PR = TR * Vinf) %>%
   mutate(
     Vv = Vinf * sin(theta * pi/ 180),
@@ -605,9 +617,9 @@ Power <- rbind(PTOgr, PTOtr, Pseg1, Pseg2, Pseg3, Pseg4, Pcr, Pdes, PLDfl, PLDgr
   mutate(t_total = cumsum(duration),
          Eeng_total = cumsum(Eduration),
          R_total = cumsum(Rduration),
-         Wb84_total = Eeng_total/(inp$E * 0.84),
-         Wb84_total = Wb84_total * 1.05,
-         Vb = Wb84_total/inp$Dens)
+         Wb80_total = Eeng_total/(inp$E * 0.80),
+         Wb80_total = Wb80_total * 1.05,
+         Vb = Wb80_total/inp$Dens)
 
 #--- Battery Fracs
 BatteryFracs <- Power %>%
@@ -615,10 +627,10 @@ BatteryFracs <- Power %>%
   top_n(1, t) %>%
   ungroup() %>%
   mutate(`%Wi/Wb` = Eeng/max(Eeng_total)*100,
-         `Wi/W` = Wb100 / 0.84 * 1.05 / inp$W)
-Wb <- max(BatteryFracs$Wb84_total)
+         `Wi/W` = Wb100 / 0.80 * 1.05 / inp$W)
+Wb <- max(BatteryFracs$Wb80_total)
 Wb_est <- filter(out1, type == "Cruise") %>%
-  mutate(D = qinf * Cd * S, Wb = D / 0.84 * 1.05 * 1.20) %>%
+  mutate(D = qinf * Cd * S, Wb = D / 0.80 * 1.05 * 1.1) %>%
   ungroup() %>%
   select(Wb)
 Wb_est <- as.numeric(Wb_est)
@@ -648,5 +660,13 @@ summary <- rbind(
 AeroParamsPlot <- data.frame(Cl = seq(from=0, to=inp$Clclean, by=0.1)) %>%
   mutate(Cd = inp$Cd0 + inp$K * Cl^2)
 
+Power$type <- factor(Power$type, levels = Power$type)
+ggplot(Power) + geom_line(aes(x=R_total, y = Eeng_total, colour = type))
+ggplot(Power) + geom_line(aes(x=R_total, y = h, colour = type))
+ggplot(Power) + geom_line(aes(x=R_total, y = theta, colour = type))
 
+BatteryFracs$type <- factor(BatteryFracs$type, levels = BatteryFracs$type)
+ggplot(BatteryFracs) + geom_bar(aes(type, weight = `%Wi/Wb`, colour = type))
 
+WeightFracs$Description <- factor(WeightFracs$Description, levels = WeightFracs$Description)
+ggplot(WeightFracs[1:3,1:2]) + geom_bar(aes(Description, weight = Value, colour = Description))
