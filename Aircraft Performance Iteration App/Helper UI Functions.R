@@ -12,9 +12,9 @@ input_initial <- data.frame(
   K = 0.01989,
   
   Cd0 = 0.015,
-  Clclean = 1.5,
-  Clflaps = 1.2,
-  Clhls = 1.5,
+  Clclean = 1.7,
+  Clflaps = 1.0,
+  Clhls = 1.3,
   
   m = 6500,
   W = 63742,
@@ -22,12 +22,14 @@ input_initial <- data.frame(
   
   P0eng = 180000,
   P0 = 360000,
+  Etatotal = 0.80,
   
   ClG = 0.25,
   Cd0G = 0.025,
   hground = 2.5
 )
 
+resolution = 10
 inputvals <- input_initial
 
 ## Specifications ======================================================================
@@ -42,3 +44,14 @@ specifications <- data.frame(
             100 * 0.3048 / 60, 10000 * 0.3048, 12000 * 0.3048, 0.25, 1000e3, 3.5, -1.5)
 )
   
+## Plot Interaction ======================================================================
+xy_str <- function(e) {
+  if(is.null(e)) return("NULL\n")
+  paste0("x=", round(e$x, 4), " y=", round(e$y, 4), "\n")
+}
+
+xy_range_str <- function(e) {
+  if(is.null(e)) return("NULL\n")
+  paste0("xmin=", round(e$xmin, 4), " xmax=", round(e$xmax, 4), 
+         " ymin=", round(e$ymin, 4), " ymax=", round(e$ymax, 4))
+}

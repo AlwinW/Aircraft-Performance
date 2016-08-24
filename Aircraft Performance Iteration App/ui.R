@@ -1,9 +1,19 @@
 #---Aircraft Performance
 library(shiny)
+library(shinyAce)
 
 # Set the initial values
 source("Helper UI Functions.R")
 
+sourceCode <- list(
+  aceEditor("ui",
+            value = paste(readLines("Helper Main Functions.R"), collapse="\n"),
+            mode = "r",
+            # theme = "cobalt",
+            height = "800px",
+            readOnly = TRUE
+            )
+)
 
 shinyUI(fluidPage(
   # Application title
@@ -19,48 +29,49 @@ shinyUI(fluidPage(
       h4("Wing Parameters"),
       fluidRow(
         column(6, 
-          numericInput("S", "Wing Area (m^2)", input_initial$S),
-          numericInput("b", "Wing Span (m)", input_initial$b),
-          numericInput("AR", "Aspect Ratio", input_initial$AR)),
+          numericInput("S", "Wing Area (m^2)", input_initial$S, step = 0.5),
+          numericInput("b", "Wing Span (m)", input_initial$b), step = 0.1,
+          numericInput("AR", "Aspect Ratio", input_initial$AR), step = 0.5),
         column(6,
-          numericInput("e", "Span Efficiency", input_initial$e),
-          numericInput("K", "K (calculated)", input_initial$K))
+          numericInput("e", "Span Efficiency", input_initial$e, step = 0.05),
+          numericInput("K", "K (calculated)", input_initial$K), step = 0.01)
         ),
       #
       h4("Aerodynamic Parameters"),
       fluidRow(
         column(6, 
-               numericInput("Cd0", "Zero Lift Coefficient of Drag", input_initial$Cd0),
-               numericInput("Clclean", "Maximum Clean Coefficient of Lift", input_initial$Clclean)),
+               numericInput("Cd0", "Zero Lift Coefficient of Drag", input_initial$Cd0, step = 0.005),
+               numericInput("Clclean", "Maximum Clean Coefficient of Lift", input_initial$Clclean), step = 0.1),
         column(6,
-               numericInput("Clflaps", "Lift from Flaps (added to Clmax)", input_initial$Clflaps),
-               numericInput("Clhls", "Lift from High Lift System (added to Clmax)", input_initial$Clhls))
+               numericInput("Clflaps", "Lift from Flaps (added to Clmax)", input_initial$Clflaps, step = 0.1),
+               numericInput("Clhls", "Lift from High Lift System (added to Clmax)", input_initial$Clhls, step = 0.1))
       ),
       #
       h4("Weight Parameters"),
       fluidRow(
         column(6, 
-              numericInput("m", "Mass (kg)", input_initial$m),
-              numericInput("W", "Weight (autocalculated if mass given) (N)", input_initial$W)),
+              numericInput("m", "Mass (kg)", input_initial$m, step = 100),
+              numericInput("W", "Weight (autocalculated if mass given) (N)", input_initial$W, step = 100)),
         column(6,
-               numericInput("WS", "Wing Loading (autocalculated if W, S given)", input_initial$WS))
+               numericInput("WS", "Wing Loading (autocalculated if W, S given)", input_initial$WS, step = 100))
       ),
       #
       h4("Propulsion Parameters"),
       fluidRow(
         column(6, 
-          numericInput("P0eng", "Power per Engine (W)", input_initial$P0eng)),
+          numericInput("P0eng", "Power per Engine (W)", input_initial$P0eng, step = 10000),
+          numericInput("Etatotal", "Total Battery to Propeller Efficiency", input_initial$Etatotal, step = 0.05)),
         column(6,
-          numericInput("P0","Total Static Power (x2 Engine Power) (W)", input_initial$P0))
+          numericInput("P0","Total Static Power (x2 Engine Power) (W)", input_initial$P0, step = 10000))
       ),
       #
       h4("Takeoff Parameters"),
       fluidRow(
         column(6, 
-          numericInput("ClG", "Coefficient of Lift at zero Angle of Attack", input_initial$ClG),
-          numericInput("Cd0G", "Cd0 in takeoff config", input_initial$Cd0G)),
+          numericInput("ClG", "Coefficient of Lift at zero Angle of Attack", input_initial$ClG, step = 0.05),
+          numericInput("Cd0G", "Cd0 in takeoff config", input_initial$Cd0G, step = 0.005)),
         column(6,
-          numericInput("hground", "Wing height above the ground", input_initial$hground))
+          numericInput("hground", "Wing height above the ground", input_initial$hground, step = 0.1))
       )
     ),
     
@@ -70,16 +81,15 @@ shinyUI(fluidPage(
     tabsetPanel(
       position = "above",
       #
+      tabPanel("Summary",
+               dataTableOutput("SummaryTable")),
+      #
       tabPanel("Specifications",
-               dataTableOutput("specs")),
-      
+               dataTableOutput("SpecificationsTable")),
       #
       tabPanel("Aerodynamic Properties",
-               h3("Various Altitudes"),
                dataTableOutput("AeroParamsTable"),
-               h3("Drag Polar"),
-               plotOutput("AeroParamsPlot", click = "APP_click", dblclick = "APP_dblclick",
-                          hover = "APP_hover", brush = "APP_brush"),
+               plotOutput("AeroParamsPlot", click = "APP_click", hover = "APP_hover"),
                verbatimTextOutput("APP_info")),
       #
       tabPanel("Operating Window",
@@ -87,7 +97,7 @@ shinyUI(fluidPage(
                       numericInput("OW_maxh", "Maximum Height (m)", 12500)),
                column(6,numericInput("OW_nv","Number of Velocity Points", 51),
                       numericInput("OW_maxv", "Maximum Velocity", 200)),
-               p("Things can get quite wacky. Play around with the maximum height unitl it works"),
+               helpText("Things can get quite wacky. Play around with the maximum height until it works"),
                plotOutput("OperatingWindowPlot", click = "OWV_click", dblclick = "OWV_dblclick",
                           hover = "OWV_hover", brush = "OWV_brush"),
                verbatimTextOutput("OWV_info"),
@@ -131,10 +141,14 @@ shinyUI(fluidPage(
                dataTableOutput("GenWeightFracs2"),
                verbatimTextOutput("RoughPower")),
       #
-      tabPanel("Power Calculations", 
-               dataTableOutput("PowerTable"),
-               verbatimTextOutput("summary")),
-      tabPanel("Table", tableOutput("table"))
+      tabPanel("Mission Analysis", 
+               plotOutput("PowerSummary", click = "PS_click", hover = "PS_hover"),
+               plotOutput("PowerFacet", click = "PF_click", hover = "PF_hover"),
+               downloadButton("downloadPower", "Download Power Data as CSV"),
+               fluidRow(dataTableOutput("PowerTable"))),
+      tabPanel("Table", tableOutput("table")),
+      tabPanel("Main Function Code",
+               sourceCode)
     )
   )
 )

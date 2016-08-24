@@ -11,12 +11,17 @@ library(RColorBrewer)
 
 #--- Set the initial values
 source("Helper UI Functions.R")
+source("Helper Standard Atmosphere.R")
 source("Helper Main Functions.R")
+
+#--- Set initial display options
+theme_set(theme_linedraw())
+options(scipen = 10)
 
 ## Server ======================================================================
 shinyServer(function(session, input, output) {
 ## Non-Reactive ======================================================================
-  output$specs <- renderDataTable({
+  output$SpecificationsTable <- renderDataTable({
     specifications[,2:3]
   })
   
@@ -50,6 +55,7 @@ shinyServer(function(session, input, output) {
     
     updateNumericInput(session, "P0eng", value = inputdatavars$P0eng)
     updateNumericInput(session, "P0", value = inputdatavars$P0)
+    updateNumericInput(session, "Etatotal", value = inputdatavars$Etatotal)
     
     updateNumericInput(session, "ClG", value = inputdatavars$ClG)
     updateNumericInput(session, "Cd0G", value = inputdatavars$Cd0G)
@@ -75,7 +81,7 @@ shinyServer(function(session, input, output) {
       data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
                  Cd0 = input$Cd0, Clclean = input$Clclean, Clflaps = input$Clflaps, Clhls = input$Clhls,
                  m = input$m, W = input$W, WS = input$WS,
-                 P0eng = input$P0eng, P0 = input$P0,
+                 P0eng = input$P0eng, P0 = input$P0, Etatotal = input$Etatotal,
                  ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
       )
     #--- Allow a user to download their inputs
@@ -98,19 +104,78 @@ shinyServer(function(session, input, output) {
       data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
                  Cd0 = input$Cd0, Clclean = input$Clclean, Clflaps = input$Clflaps, Clhls = input$Clhls,
                  m = input$m, W = input$W, WS = input$WS,
-                 P0eng = input$P0eng, P0 = input$P0,
+                 P0eng = input$P0eng, P0 = input$P0, Etatotal = input$Etatotal,
                  ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
       )
     
-    MainIterationOut <- MainIterationFunction(inputvals, specifications, out = "All")
+    MainIterationOut <- suppressWarnings(MainIterationFunction(inputvals, specifications, out = "All"))
+    MainGraphsOut <- suppressWarnings(MainGraphingFunction(inputvals, specifications))
     
-    output$PowerTable <- renderDataTable({
-      print.data.frame(MainIterationOut$Power)
+## Summary ======================================================================
+    output$SummaryTable <- renderDataTable({
+      MainIterationOut$summary
     })
     
+## AeroParams ======================================================================
+    output$AeroParamsTable <- renderDataTable({
+      MainIterationOut$AeroParamsTable
+    })
+    
+    output$AeroParamsPlot <- renderPlot({
+      slope = MainGraphsOut$AeroParamsPlotPoints$Cl[3]/MainGraphsOut$AeroParamsPlotPoints$Cd[3]
+      ggplot(MainGraphsOut$AeroParamsPlotPoints,
+             aes(x = Cd, y = Cl, colour = type)) +
+        geom_abline(intercept = 0, slope = slope, colour = "green4") + 
+        geom_line(data = MainGraphsOut$AeroParamsPlot,
+                  aes(x = Cd, y = Cl, colour = "Drag Polar")) +
+        geom_point() + 
+        geom_text(aes(label = paste0(type, " Vinf = ", round(Vinf, 4))), hjust = 1, vjust = -0.5, show.legend = FALSE) + 
+        scale_color_manual(values = c("Drag Polar" = "grey4", "Cruise" = "blue",
+                                      "(L/D)*" = "green3", "L^(3/2)/D" = "purple",
+                                      "Stall" = "red")) +
+        expand_limits(x = 0, y = 0) +
+        labs(list(title = "Drag Polar", x = "Coefficient of Drag", y = "Coefficient of Lift", colour = ""))
+    })
+    
+    output$APP_info <- renderText({
+      paste0("click: ", xy_str(input$APP_click), "hover: ", xy_str(input$APP_hover)
+      )
+    })
+## Mission Analysis ======================================================================
+    output$PowerSummary <- renderPlot({
+      ggplot(mutate(MainIterationOut$BatteryFracs, type = factor(type, levels = type)), 
+             aes(colour = type)) + 
+        geom_bar(aes(type, weight = `%Wi/Wb`, colour = type)) +
+        theme(axis.text.x = element_text(angle = -30, hjust = 0)) +
+        labs(list(title = "Energy Usesage", x = "Mission Segment", y = "Percentage", colour = "Mission Segment"))
+    })
+    
+    PlotPower <- MainIterationOut$Power %>% gather(key, value, -type, -R_total)
+    output$PowerFacet <- renderPlot({
+      ggplot(filter(PlotPower, key %in% c("Clmax", "Cl", "Cd", "ClCd", "theta", "Power")), 
+             aes(x=R_total, colour = type, width = 2)) + 
+        geom_line(aes(y = value)) + 
+        facet_wrap(~key, scales = "free_y") +
+        labs(list(title = "Mission Analysis", x = "Range", y = "", colour = "Mission Segment"))
+    })
+    
+    
+    #--- Allow a user to download power calcs
+    output$downloadPower <- downloadHandler(
+      filename = function() {
+        paste(date()," Power Calcs", ".csv", sep = "")
+      },
+      content = function(file) {
+        write.csv(MainIterationOut$Power, file)
+      }
+    )
+    
+    output$PowerTable <- renderDataTable({
+      MainIterationOut$PowerSummary
+    })
+    
+    
   })
-  
-  
   
   
   
