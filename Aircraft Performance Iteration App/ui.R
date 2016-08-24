@@ -112,9 +112,9 @@ shinyUI(fluidPage(
                column(6,numericInput("PT_nv","Number of Velocity Points", 51),
                       numericInput("PT_minv", "Minimum Velocity", 40),
                       numericInput("PT_maxv", "Maximum Velocity", 150)),
-               p("Legend: Cirlces indicate lowest power and triangles indicate lowest thrust. 
+               helpText("Legend: Cirlces indicate lowest power and triangles indicate lowest thrust. 
                Red marks stall speed and orange marks a safety factor applied to the stall speed."),
-               p("NOTE: The lowest power maximises the endurance, not the range!"),
+               helpText("NOTE: The lowest power maximises the endurance, not the range!"),
                plotOutput("PowerExcessPlot", click = "Pe_click", hover = "Pe_hover"),
                verbatimTextOutput("Pe_info"),
                plotOutput("ThrustExcessPlot", click = "Te_click", hover = "Te_hover"),

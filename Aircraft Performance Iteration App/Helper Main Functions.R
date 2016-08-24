@@ -69,7 +69,6 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   out1$Clmax <- inp$Clclean + c(0, 0, 0, inp$Clflaps, inp$Clhls)
   # Transform the dataframe to find the various aerodynamic properties
   out1 <- StandardAtomsphere(out1) %>%
-    rowwise () %>%
     mutate(Vinf = Mach * a,
            Vstall = Vmin(rho, WS, Clmax))
   out1$Vinf <- c(out1$Vinf[1], out1$Vinf[2], out1$Vinf[3], out1$Vstall[4] * 1.2, out1$Vstall[5] * 1.3)
@@ -517,19 +516,22 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   #--- Descent
   Pdes4num = resolution * 8
   PdesHeights <- seq(inp$AltCruise, 50*0.3048, length.out = Pdes4num)
-  Vcr <- as.double(filter(AeroParamsTable, type == "Cruise") %>% select(Vinf))
-  PdesVelocities <- seq(Vcr, AirDistLD$Vapp, length.out = Pdes4num)
-  Pcr <- as.double(filter(out1, type == "Cruise") %>% mutate(D = qinf * S * Cd, PR = D * Vinf) %>% select(PR))
-  PdesPowers <- c(
-    seq(Pcr, 1/8 * Pcr + 7/8* 0.05*inp$P0, length.out = ceiling(Pdes4num/8)),
-    seq(1/8 * Pcr + 7/8* 0.05*inp$P0, 0.05*inp$P0, length.out = Pdes4num - ceiling(Pdes4num/8))
+  Vcruise <- as.double(filter(AeroParamsTable, type == "Cruise") %>% select(Vinf))
+  PdesVelocities <- c(
+    seq(Vcruise, 3/8 * Vcruise + 5/8* AirDistLD$Vapp, length.out = ceiling(Pdes4num/8)),
+    seq(3/8 * Vcruise + 5/8* AirDistLD$Vapp, AirDistLD$Vapp, length.out = Pdes4num - ceiling(Pdes4num/8))
   )
-  # seq(1, 0, length.out = Pdes4num)^(6) * (Pcr - 0.1*inp$P0) + 0.1*inp$P0
+    # seq(Vcruise, AirDistLD$Vapp, length.out = Pdes4num)
+  Pcruise <- as.double(filter(out1, type == "Cruise") %>% mutate(D = qinf * S * Cd, PR = D * Vinf) %>% select(PR))
+  PdesPowers <- c(
+    seq(Pcruise, 1/8 * Pcruise + 7/8* 0.05*inp$P0, length.out = ceiling(Pdes4num/8)),
+    seq(1/8 * Pcruise + 7/8* 0.05*inp$P0, 0.05*inp$P0, length.out = Pdes4num - ceiling(Pdes4num/8))
+  )
+  # seq(1, 0, length.out = Pdes4num)^(6) * (Pcruise - 0.1*inp$P0) + 0.1*inp$P0
   Pdes <- inp
   Pdes$type <- "Descent"
   Pdes$Ne <- 2
   Pdes <- Pdes[rep(row.names(Pdes), each = Pdes4num), 1:length(Pdes)]
-  rownames(Pdes) <- NULL
   Pdes$h <- PdesHeights
   Pdes$Vinf <- PdesVelocities
   Pdes$Pthrot <- PdesPowers
@@ -624,6 +626,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            theta = 0,
            Vh = Vinf,
            duration = Scruise/Vinf)
+  row.names(Pcr) <- NULL
   Pcr <- Pcr[rep(row.names(Pcr), each = 2), 1:length(Pcr)]
   Pcr$duration <- c(0, Pcr$duration[2])
   Pcr <- Pcr %>%

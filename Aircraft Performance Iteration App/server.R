@@ -141,6 +141,7 @@ shinyServer(function(session, input, output) {
       paste0("click: ", xy_str(input$APP_click), "hover: ", xy_str(input$APP_hover)
       )
     })
+    
 ## Mission Analysis ======================================================================
     output$PowerSummary <- renderPlot({
       ggplot(mutate(MainIterationOut$BatteryFracs, type = factor(type, levels = type)), 
@@ -151,6 +152,9 @@ shinyServer(function(session, input, output) {
     })
     
     PlotPower <- MainIterationOut$Power %>% gather(key, value, -type, -R_total)
+    PlotPower$type <- factor(PlotPower$type, levels = unique(PlotPower$type))
+    PlotPower$key <- factor(PlotPower$key, levels = unique(PlotPower$key))
+    
     output$PowerFacet <- renderPlot({
       ggplot(filter(PlotPower, key %in% c("Clmax", "Cl", "Cd", "ClCd", "theta", "Power")), 
              aes(x=R_total, colour = type, width = 2)) + 
