@@ -320,7 +320,7 @@ PTOgr <- filter(out2, type == "All Engines") %>%
          Rduration = AreaDur,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 # Transition
 PTOtr <- filter(AirDistTO, type == "All Engines") %>%
   ungroup() %>%
@@ -347,7 +347,7 @@ PTOtr <- PTOtr %>%
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 #--- Climb Segments
 # Segment 1
@@ -377,7 +377,7 @@ Pseg1 <- Pseg1 %>%
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 # Segment 2
 # Flying at climb speed V2 with landing gear up and flaps in takeoff position
@@ -410,7 +410,7 @@ Pseg2 <- cbind(inp, h = Pseg2Heights, type = "2nd Segment Climb") %>%
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 # Segment 3
 # Flying at constant altitude accelerating from V2 to VFS or 1.25 VS with flaps in TO
@@ -444,7 +444,7 @@ Pseg3 <- Pseg3 %>%
          Rduration = 1/2 * (Vinf + lag(Vinf,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 # Segment 4
 # Flying at climb speed Vcruise with landing gear up and flaps retracted
@@ -477,7 +477,7 @@ Pseg4 <- cbind(inp, h = Pseg4Heights, type = "4th Segment Climb") %>%
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 #--- Descent
 Pdes4num = 20
@@ -523,8 +523,9 @@ Pdes <- Pdes %>%
          Wb100 = Eeng / 1e6,
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
-         R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+         R = cumsum(Rduration),
+         PA = PR) %>%
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 #--- Landing
 # Flare
@@ -551,8 +552,9 @@ PLDfl <- PLDfl %>%
          Wb100 = Eeng / 1e6,
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
-         R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+         R = cumsum(Rduration),
+         PA = PR) %>%
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 # Ground Roll 
 PLDgr <- out4 %>%
@@ -570,7 +572,7 @@ PLDgr <- out4 %>%
          Rduration = AreaDur,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
          R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 #--- Cruise
 Scruise <- inp$Range - tail(PTOgr$R,1) - tail(PTOtr$R,1) -
@@ -594,8 +596,9 @@ Pcr <- Pcr %>%
          Wb100 = Eeng / 1e6,
          Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
          Rduration = ifelse(is.na(Rduration), 0, Rduration),
-         R = cumsum(Rduration)) %>%
-  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration)
+         R = cumsum(Rduration),
+         PA = PR) %>%
+  select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, PA)
 
 #--- Total
 Power <- rbind(PTOgr, PTOtr, Pseg1, Pseg2, Pseg3, Pseg4, Pcr, Pdes, PLDfl, PLDgr) %>%
