@@ -815,6 +815,7 @@ ClimbFunction <- function(inputvals, specifications, heights) {
   # Add in the various interested heights
   out <- inp[rep(row.names(inp), each = nrow(heights)), 1:length(inp)]
   out$type <- heights$type
+  out$Ne <- heights$Ne
   out$h <- heights$h
   # Add in the standard atmosphere values
   out <- StandardAtomsphere(out) %>%
@@ -846,7 +847,7 @@ ClimbFunction <- function(inputvals, specifications, heights) {
       Cl = W / (qinf * S),
       Cd = Cd0 + K * Cl^2,
       D = qinf * S * Cd,
-      PA = PA(P0, sigma),
+      PA = PA(P0, sigma) * Ne,
       TA = PA / Vinf) %>%
     do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W))) %>%
     ungroup() %>%

@@ -160,8 +160,9 @@ shinyServer(function(session, input, output) {
     
     
 ## Climb ======================================================================
-    heights <- data.frame(type = c("Sea Level", "2nd Seg Climb", "3rd Seg Accel", "Cruise", "Ceiling"),
-                          h = c(0, 35*0.3048, 400*0.3048, 10000*0.3048, 12000*0.3048))
+    heights <- data.frame(type = c("Sea Level", "2nd Seg", "2nd Seg OEI", "Cruise", "Ceiling"),
+                          h = c(0, 35*0.3048, 35*0.3048, 10000*0.3048, 12000*0.3048),
+                          Ne = c(2, 2, 1, 2, 2))
     Climb <- ClimbFunction(inputvals, specifications, heights)
     Climb$type <- factor(Climb$type, levels = heights$type, ordered = TRUE)
     
@@ -170,9 +171,9 @@ shinyServer(function(session, input, output) {
       ggplot(Climb, aes(x=Vinf, y=PerGrad, group = type, colour = type)) + 
         geom_path() + 
         geom_point(aes(shape = Vname, size = ifelse(Vname == "Vinf", 0, 1))) + 
-        geom_hline(aes(yintercept = 1.5, colour = "2nd Seg Climb")) +
-        geom_text(aes(x = min(Vinf), y = 1.5, colour = "2nd Seg Climb"), 
-                  label = "Minimum 2nd Seg Climb", hjust = 0, vjust = 1.5,
+        geom_hline(aes(yintercept = 1.5, colour = "2nd Seg OEI")) +
+        geom_text(aes(x = min(Vinf), y = 1.5, colour = "2nd Seg OEI"), 
+                  label = "Minimum 2nd Seg Climb OEI", hjust = 0, vjust = 1.5,
                   show.legend = FALSE) + 
         scale_size(range = c(0,3)) + 
         scale_shape_manual(values = c("Vcruise" = 1, "Vflaps" = 3, "Vinf" = 1, "Vsafe" = 0, "Vstall" = 2)) +
@@ -212,7 +213,8 @@ shinyServer(function(session, input, output) {
     })
     
     heightsall <- data.frame(type = seq(0, 4000, 250),
-                             h = seq(0, 4000, 250))
+                             h = seq(0, 4000, 250),
+                             Ne = 2)
     Climball <- ClimbFunction(inputvals, specifications, heightsall)
     output$ClimbRateAllPlot <- renderPlot({
       ggplot(Climball, aes(x=Vinf, ClimbRate / 0.3 * 60, group = type, colour = type)) + 
@@ -223,6 +225,7 @@ shinyServer(function(session, input, output) {
         labs(list(title = "Climb Rates At Various Altitudes (Vv)", x = "Vinf (m/s)", y = "Climb Rate (ft/min)", 
                   colour = "Mission Segment", shape = "Velocity"))
     })
+    
     
 ## Takeoff ======================================================================
     Takeoff <- MainIterationOut[c("AccelerateStop","AccelerateContinue", "AccelerateLiftoff", "BFL")]
