@@ -342,7 +342,8 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     spread(type, Area)
   DeccelerateLand <- head(DeccelerateLand,1)
   DeccelerateLand$`Air Distance` = sum(filter(AirDistLD, type == "All Engines") %>% select(Sair))
-  DeccelerateLand <- mutate(DeccelerateLand, `Deccelerate-Land` = (`Engines off` + `Air Distance`) * 1.33)
+  DeccelerateLand$`Free Roll` = as.double(out4$Vstall[1]*1.15 * 2)
+  DeccelerateLand <- mutate(DeccelerateLand, `Deccelerate-Land` = (`Engines off` + `Free Roll` + `Air Distance`) * 1.67)
   #--- SUMMARY
   summary <- rbind(summary,
                    data.frame(
