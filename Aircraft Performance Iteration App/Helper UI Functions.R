@@ -12,9 +12,9 @@ input_initial <- data.frame(
   K = 0.01989,
   
   Cd0 = 0.015,
-  Clclean = 1.7,
-  Clflaps = 1.0,
-  Clhls = 1.3,
+  Clclean = 1.5,
+  Clflaps = 1.2,
+  Clhls = 1.5,
   
   m = 6500,
   W = 63742,
