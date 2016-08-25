@@ -18,7 +18,8 @@ source("Helper Calculation Functions.R")
 source("Helper Numerical Methods.R")
 source("Helper UI Functions.R")
 
-
+theme_set(theme_linedraw())
+options(scipen = 10)
 
 shinyServer(function(input, output,session) {
   
