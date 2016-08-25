@@ -235,12 +235,15 @@ shinyServer(function(session, input, output) {
                      Vinf = Takeoff$AccelerateStop$Vinf, 
                      `AccelerateStop` = Takeoff$AccelerateStop$AccelerateStop,
                      `AccelerateContinue` = Takeoff$AccelerateContinue$AccelerateContinue, 
+                     `AccelerateContinueGround` = Takeoff$AccelerateContinue$AccelerateContinue - Takeoff$AccelerateContinue$`Air Distance`,
                      `AccelerateLiftoff` = Takeoff$AccelerateLiftoff$AccelerateLiftoff)
     Takeoff <- Takeoff %>% gather(key, value, - Vinf)
+    Takeoff <- Takeoff %>% mutate(dist = ifelse(key == "AccelerateContinueGround", "Ground", "Ground & Air"))
+    # Takeoff <- filter(Takeoff, key!= "AccelerateLiftoff" & Vinf <= BFL$Vlof)  
     
     output$TakeoffFieldLengthPlot <- renderPlot({
       ggplot(Takeoff, aes(x = Vinf, y = value, colour = key)) +
-        geom_line() + 
+        geom_line(aes(linetype = dist)) + 
         geom_text(aes(x = 0, y = as.double(tail(filter(Takeoff, key == "AccelerateLiftoff"),1)$value), 
                       colour = "AccelerateLiftoff"), 
                   label = "1.15 x Runway Distance for \nNormal Takeoff with 2 Engines", hjust = 0, vjust = 1.1,
@@ -249,15 +252,22 @@ shinyServer(function(session, input, output) {
         geom_text(aes(x = 0, y = 1200, colour = "Maximum"), 
                   label = "Maximum Runway Length", hjust = 0, vjust = -0.5,
                   show.legend = FALSE) +
-        geom_hline(aes(yintercept = BFL$BFL, colour = "BFL"), linetype = "dotted", show.legend = FALSE) + 
-        geom_vline(aes(xintercept = BFL$Vinf, colour = "BFL"), linetype = "dotted", show.legend = FALSE) +
+        geom_hline(aes(yintercept = BFL$BFL, colour = "BFL"), linetype = 3, show.legend = FALSE) + 
+        geom_vline(aes(xintercept = BFL$Vinf, colour = "BFL"), linetype = 3, show.legend = FALSE) +
         geom_point(data = BFL, aes(x = Vinf, y = BFL, colour = "BFL")) +
         geom_text(aes(x = BFL$Vinf, y = 0, colour = "BFL"), 
-                  label = "V1", hjust = 0.5, vjust = 0,
+                  label = "V1", hjust = 0.5, vjust = 0.5,
+                  show.legend = FALSE) +
+        geom_vline(aes(xintercept = BFL$Vlof, colour = "AccelerateLiftoff"), linetype = 6, show.legend = FALSE) +
+        geom_text(aes(x = BFL$Vlof, y = 0, colour = "AccelerateLiftoff"), 
+                  label = "V2", hjust = 0.5, vjust = -1.5,
                   show.legend = FALSE) +
         labs(list(title = "Takeoff Runway Balanced Field Length", 
                   x = "Velocity at Engine Loss (m/s)", y = "Runway Distance Required (m)", 
-                  colour = "Scenario"))
+                  colour = "Scenario:", linetype = "Distance:")) +
+        scale_linetype_manual(values = c("Ground" = 5, "Ground & Air" = 1)) + 
+        ylim(0, NA) + 
+        theme(legend.position = "bottom")
     })
     
     

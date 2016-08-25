@@ -146,7 +146,8 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     mutate(Vstall = Vmin(rho, WS, Clclean + Clflaps),
            Vlof = 1.1 * Vstall)
   # Create a seqence of velocities to bind to the data frame
-  velocities <- seq(1e-5,out2$Vlof[1], length.out = resolution * 5)
+  Vlof <- out2$Vlof[1]
+  velocities <- c(seq(1e-1,Vlof, length.out = resolution * 5), seq(Vlof*1.01, Vlof*1.2, length.out = resolution * 2 + 1))
   out2 <- out2[rep(row.names(out2),each=length(velocities)),1:length(out2)]
   rownames(out2) <- NULL
   out2$Vinf <- rep(velocities,3)
@@ -173,42 +174,49 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     mutate(ClTR = Clclean + Clflaps, 
       Vstall = Vmin(rho, WS, ClTR), VTR = Vstall * 1.15,
       PA = PA(P0eng * Ne, sigma), TA = PA / VTR,
-      qinf = 1/2 * rho * VTR^2, Cd = Cd0G + K * ClTR^2,
+      qinf = 1/2 * rho * VTR^2, Cd = Cd0 + K * ClTR^2,
       D = qinf * S * Cd, L = qinf * S * ClTR) %>%
+    rowwise() %>%
     mutate(
       R = (VTR) ^ 2 / (0.2 * g),
-      gamma = asin((TA - D) / W),
+      # gamma = asin((TA - D) / W),
+      gamma = ClimbRatesFunction(PA, Cd0, rho, VTR, S, K, W)[[1]] * pi / 180,
       hTR = R * (1 - cos(gamma)),
-      ST = R * ((TA - D) / W),
+      ST = R * (sin(gamma)),
       SC = (Hobs - hTR) / tan(gamma),
       Sair = ifelse(SC >0, ST + SC, sqrt(R^2 - (R-hTR)^2))
-    )
+    )%>%
+    ungroup()
   #--- Distance required to stop after engine failure at V1
   AccelerateStop <- select(out2, Vinf, type, Area) %>%
     spread(type, Area) %>%
     mutate(AccelerateStop = `All Engines` - `Rejected Take-Off`)
   #--- Distance required to continue takeoff after engine failure at V1
+  maxOEI <- as.double(filter(out2, Vinf == Vlof, type == "One Engine Down")$Area)
   AccelerateContinue <- select(out2, Vinf, type, Area) %>%
     spread(type, Area) %>%
-    mutate(`One Engine Down` = max(`One Engine Down`) - `One Engine Down`)
+    mutate(`One Engine Down` = maxOEI - `One Engine Down`)
   AccelerateContinue$`Air Distance` = sum(filter(AirDistTO, type == "One Engine Down") %>% select(Sair))
   AccelerateContinue <- mutate(AccelerateContinue, AccelerateContinue = `All Engines` + `One Engine Down` + `Air Distance`)
   #--- Distance required to take off with all engines operational PLUS a 1.15 safety margin
   AccelerateLiftoff <- select(out2, Vinf, type, Area) %>%
     spread(type, Area)
-  AccelerateLiftoff <- tail(AccelerateLiftoff,1)
+  AccelerateLiftoff <- filter(AccelerateLiftoff, Vinf == Vlof)
   AccelerateLiftoff$`Air Distance` = sum(filter(AirDistTO, type == "All Engines") %>% select(Sair))
   AccelerateLiftoff <- mutate(AccelerateLiftoff, AccelerateLiftoff = (`All Engines` + `Air Distance`) * 1.15)
   #--- Find the value of BFL
   BFL <- AccelerateStop %>% select(Vinf, AccelerateStop)
   BFL$AccelerateContinue <- AccelerateContinue$AccelerateContinue
-  BFL <- mutate(BFL, diff = AccelerateContinue - AccelerateStop,
+  BFL <- mutate(BFL, 
+                Vlof = out2$Vlof[1],
+                diff = AccelerateContinue - AccelerateStop,
                 root = sign(diff*lag(diff,1)),
-                root = root*lead(root,1)) %>%
+                root = root*lead(root,1),
+                root = ifelse(is.na(root),1,root)) %>%
     arrange(root, abs(diff))
   # VERY ROUGH (too be fixed later)
   BFL <- head(BFL,1) %>%
-    mutate(BFL = max(AccelerateStop, AccelerateContinue))
+    mutate(BFL = min(AccelerateStop, AccelerateContinue))
   
   #--- SUMMARY
   summary <- rbind(
