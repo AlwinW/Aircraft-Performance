@@ -9,7 +9,7 @@ Vmin <- function(rho, WS, Clmax)
 
 #--- Power derating function
 PA <- function(P0, sigma)
-  P0 * sigma^0.9
+  P0 * sigma^0
 
 #--- Effective K due to ground effect
 Keff <- function(K, h, b)
@@ -42,7 +42,7 @@ ClimbRatesFunction <- function(P, Cd0, rho, V, S, K, W) {
     return(data.frame(
       Theta = theta * 180 / pi, 
       SinTheta = sintheta, 
-      PerGrad = sintheta*100, 
+      PerGrad = tan(theta)*100, 
       ClimbRate = sintheta * V))
   }
 }
@@ -829,7 +829,7 @@ ClimbFunction <- function(inputvals, specifications, heights) {
           seq(.$Vflaps, .$Vmin, length.out = 10),
           seq(.$Vmin, .$Vmin * 1.2, length.out = 10),
           seq(.$Vmin * 1.2, .$Vcruise, length.out = 10),
-          seq(.$Vcruise, .$Vcruise * 2, length.out = 20)),
+          seq(.$Vcruise, .$Vcruise * 1.5, length.out = 20)),
         Vname = c(
           "Vflaps", rep("Vinf", 8), "Vstall",
           "Vstall", rep("Vinf", 8),"Vsafe",
