@@ -3,6 +3,7 @@
 #============================
 # These are the main functions that will run on the server
 
+## Small Functions ======================================================================
 #--- Minimum velocity for some density, wing loading and max Cl
 Vmin <- function(rho, WS, Clmax) 
   sqrt(2/rho * WS * 1/Clmax)
@@ -47,6 +48,8 @@ ClimbRatesFunction <- function(P, Cd0, rho, V, S, K, W) {
   }
 }
 
+# Iteration: Minimise - Minimise the differece
+
 ## Main Function ======================================================================
 # THIS IS FOR CALCULATING SINGLE VALUES THAT WILL THEN GO INTO THE ITERATION FUNCTION
 # Do not put graphing functions here!!
@@ -57,8 +60,11 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   colnames(inp) <- t(specifications["Variable"])
   inp <- cbind(inputvals, inp)
   
-  #--- Initialise the summary data function
+  #--- Initialise the summary data frame
   summary <- data.frame()
+  
+  #--- Initialise the iteration data frame
+  iteration <- data.frame()
   
 ## AeroParams ======================================================================
   #--- Aerodynamic Parameters at various stages of the mission
@@ -123,6 +129,31 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
          inp$Vappmax
           )
      ))
+  
+  iteration <- rbind(
+    iteration,
+    data.frame(
+      Description = c(
+        "Cruise near Vstar",
+        "Cruise above 1.2 Vstall",
+        "Landing below 100kt"
+      ),
+      Iteration = c(
+        filter(out1, type == "Cruise")$Vinf,
+        filter(out1, type == "Cruise")$Vinf,
+        filter(out1, type == "Landing")$Vstall * 1.3
+      ),
+      Specification = c(
+        filter(out1, type == "Cruise")$Vstar,
+        filter(out1, type == "Cruise")$Vsafe,
+        inp$Vappmax
+      ),
+      Minimise = c(1, 0, 1),
+      Under = c(1, 0, 0),
+      Over = c(0, 1, 0)
+    )
+  )
+  
   
   if (is.function(updateProgress)) {
     text <- paste0("Aerodynamic Parameters")
@@ -242,6 +273,27 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
          NA)
       ))
   
+  iteration <- rbind(
+    iteration,
+    data.frame(
+      Description = c(
+        "Normal Takeoff",
+        "Estimated BFL"
+      ),
+      Iteration = c(
+        AccelerateLiftoff$AccelerateLiftoff,
+        BFL$BFL
+      ),
+      Specification = c(
+        inp$Srun, 
+        inp$Srun
+      ),
+      Minimise = c(1, 1),
+      Under = c(1, 1),
+      Over = c(0, 0)
+    )
+  )
+  
   if (is.function(updateProgress)) {
     text <- paste0("Takeoff")
     updateProgress(detail = text, value = 2)
@@ -251,7 +303,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   #--- Determine the various climb rates required
   # Create a data frame of the three scenarios
   out3 <-  inp[rep(row.names(inp), each = 3), 1:length(inp)]
-  out3$type <- c("2nd Segment Climb", "Cruise", "Ceiling")
+  out3$type <- c("2nd Seg OEI Climb", "Cruise", "Ceiling")
   out3$Ne <- c(1, 2, 2)
   out3$h <- c(inp$Hobs, inp$AltCruise, inp$AltCeil)
   out3$Clmax <- inp$Clclean + c(inp$Clflaps, 0, 0)
@@ -279,7 +331,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
         "Ceiling Climb Rate"
       ),
       Value = c(
-        filter(out3, type == "2nd Segment Climb")$PerGrad,
+        filter(out3, type == "2nd Seg OEI Climb")$PerGrad,
         filter(out3, type == "Cruise")$ClimbRate,
         filter(out3, type == "Ceiling")$ClimbRate
       ),
@@ -289,6 +341,30 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
         inp$ClimbCeil
       )
     ))
+  
+  iteration <- rbind(
+    iteration,
+    data.frame(
+      Description = c(
+        "2nd Segment Percentage Gradient",
+        "Cruise Climb Rate",
+        "Ceiling Climb Rate"
+      ),
+      Iteration = c(
+        filter(out3, type == "2nd Seg OEI Climb")$PerGrad,
+        filter(out3, type == "Cruise")$ClimbRate,
+        filter(out3, type == "Ceiling")$ClimbRate
+      ),
+      Specification = c(
+        inp$PerGrad2Seg,
+        inp$ClimbCruise,
+        inp$ClimbCeil
+      ),
+      Minimise = c(0, 0, 0),
+      Under = c(0, 0, 0),
+      Over = c(1, 1, 1)
+    )
+  )
   
   if (is.function(updateProgress)) {
     text <- paste0("Climb")
@@ -359,6 +435,25 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
                      Value = c(DeccelerateLand$`Deccelerate-Land`),
                      Target = c(inp$Srun)
                    ))
+  
+  iteration <- rbind(
+    iteration,
+    data.frame(
+      Description = c(
+        "Landing Dist"
+      ),
+      Iteration = c(
+        DeccelerateLand$`Deccelerate-Land`
+      ),
+      Specification = c(
+        inp$Srun
+      ),
+      Minimise = c(1),
+      Under = c(1),
+      Over = c(0)
+    )
+  )
+  
   if (is.function(updateProgress)) {
     text <- paste0("Landing")
     updateProgress(detail = text, value = 4)
@@ -397,6 +492,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Vh = Vinf * cos(theta * pi/ 180),
            duration = ifelse(SC > 0, hTR / Vv, Hobs / Vv),
            h = ifelse(SC > 0, hTR, Hobs))
+  PTOtr <- data.frame(PTOtr)
   PTOtr <- PTOtr[rep(row.names(PTOtr), each = 2), 1:length(PTOtr)]
   PTOtr$duration <- c(0, PTOtr$duration[2])
   PTOtr$h <- c(0, PTOtr$h[2])
@@ -432,8 +528,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Vh = Vinf * cos(theta* pi/ 180),
            duration = ifelse(SC > 0, (Hobs - hTR) / Vv, 0),
            h = ifelse(SC > 0, hTR, Hobs))
+  Pseg1 <- data.frame(Pseg1)
   Pseg1 <- Pseg1[rep(row.names(Pseg1), each = 2), 1:length(Pseg1)]
-  Pseg1$duration <- c(0, Pseg1$duration[2])
+  pPseg1$duration <- c(0, Pseg1$duration[2])
   Pseg1$h <- c(Pseg1$h[2], Pseg1$Hobs[1])
   Pseg1 <- Pseg1 %>%
     mutate(t = cumsum(duration),
@@ -759,7 +856,33 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   summary <- rbind(summary,
                    WeightFracs)
   
-  if (out == "Iteration")
+  iteration <- rbind(
+    iteration,
+    data.frame(
+      Description = c(
+        "2nd Segment Percentage Gradient",
+        "Cruise Climb Rate",
+        "Ceiling Climb Rate"
+      ),
+      Iteration = c(
+        filter(out3, type == "2nd Seg OEI Climb")$PerGrad,
+        filter(out3, type == "Cruise")$ClimbRate,
+        filter(out3, type == "Ceiling")$ClimbRate
+      ),
+      Specification = c(
+        inp$PerGrad2Seg,
+        inp$ClimbCruise,
+        inp$ClimbCeil
+      ),
+      Minimise = c(0, 0, 0),
+      Under = c(0, 0, 0),
+      Over = c(0, 0,0)
+    )
+  )
+  
+  
+## Return the result(s) ======================================================================
+  if (out == "Summary")
     return(summary)
   else if (out == "All")
     return(list(summary = summary, out1 = out1, AeroParamsTable = AeroParamsTable,
