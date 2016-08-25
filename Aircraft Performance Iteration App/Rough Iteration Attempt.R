@@ -19,6 +19,8 @@ input_initial <- data.frame(
   WS = 4086,
   P0eng = 375000,
   P0 = 750000,
+  Etatotal = 0.8,
+  alt_s = 1,
   ClG = 0.25,
   Cd0G = 0.035,
   hground = 2.5
@@ -40,7 +42,7 @@ specifications <- data.frame(
 
 
 TruelyBadassIterationSummary <- function(thatsrightonlyoneinput)
-  suppressWarnings(BadassIterationSummary(thatsrightonlyoneinput, specifications))
+  suppressWarnings(MainIterationFunction(thatsrightonlyoneinput, specifications))
 
 # Initial Data Frame
 iterationvals <- input_initial[rep(row.names(input_initial), each = 2), 1:length(input_initial)]

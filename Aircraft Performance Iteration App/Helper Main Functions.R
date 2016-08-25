@@ -153,7 +153,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   out2$Vinf <- rep(velocities,3)
   # Determine the distance travelled in each interval
   out2 <- mutate(out2, Clmax = Clclean + Clflaps, Keff = Keff(K, hground, b)) %>%
-    mutate(Mach = Vinf/a, PA = PA(P0eng * Ne, sigma), TA = PA / Vinf,
+    mutate(M = Vinf/a, PA = PA(P0eng, sigma) * Ne, TA = PA / Vinf,
            Cl = ClG, Cd = Cd0G + Keff * Cl^2, qinf = 1/2 * rho * Vinf^2,
            D =  qinf * S * Cd, L = qinf * S * Cl, 
            Ff = (W - L) * mu, Fnet = TA - D - Ff, accel = Fnet / m,
