@@ -9,7 +9,7 @@ Vmin <- function(rho, WS, Clmax)
 
 #--- Power derating function
 PA <- function(P0, sigma)
-  P0 * sigma^0
+  P0 * sigma^inputvals$alt_s
 
 #--- Effective K due to ground effect
 Keff <- function(K, h, b)
@@ -862,3 +862,79 @@ ClimbFunction <- function(inputvals, specifications, heights) {
     ungroup() %>%
     group_by(type)
 }
+
+SecantRootUnivariate <- function(func, x1, x2, info = FALSE) {
+  # reduce number of function calls by storing results as vars
+  fx1 <-  func(x1); fx2 <- func(x2)
+  fxr <- 10; loop = 1
+  while (abs(fxr) > 0.00001 & loop < 50) {
+    xr <- x2 - (fx2*(x1 - x2))/(fx1 - fx2)
+    fxr <- func(xr)
+    if (fx1 * fxr < 0) {
+      x2 <- xr; fx2 <-  fxr
+    } else {
+      x1 <- xr; fx1 <- fxr
+    }
+    loop <- loop + 1
+  }
+  if (info == TRUE) {
+    return(c(xr, fxr, loop))
+  } else {
+    return(xr)
+  }
+}
+
+PR <- function(Vinf, rho, W, S, Cd0, K) {
+  W * sqrt(2 / rho * W / S *
+             (Cd0 + K * (2 / rho * W / S * 1 / (Vinf ^ 2)) ^ 2) ^ 2 /
+             ((2 / rho * W / S * 1 / (Vinf ^ 2)) ^ 3))
+}
+
+PRmin <- function(rho, W, S, Cd0, K)
+  (256 / 27) ^ 0.25 * (2 / rho * W / S) ^ 0.5 * (Cd0 * K ^ 3) ^ 0.25 * W
+
+VmaxP <- function(PA, rho, W, S, Cd0, K, x1, x2, info = FALSE) {
+  SecantRootUnivariate(function(Vinf)
+    PA - PR(Vinf, rho, W, S, Cd0, K), x1, x2, info)
+}
+
+# minh=0;maxh=8000;nh=51;minv=10;maxv=150;nv=51;VmaxP1=1;VmaxP2=250
+
+ThrustPowerCurves <- function(inputvals, specifications, minh, maxh, nh, minv, maxv, nv, VmaxP1, VmaxP2) {
+  #--- Manipulate the data into a meaningful form
+  inp  <- t(specifications["Value"])
+  colnames(inp) <- t(specifications["Variable"])
+  inp <- cbind(inputvals, inp)
+  
+  out <-  inp[rep(row.names(inp), each = nv*nh), 1:length(inp)]
+  out$h = rep(seq(minh, maxh, length.out = nh), each = nv)
+  out$Vinf = rep(seq(minv, maxv, length.out = nv), times = nh)
+  out <- out %>%
+    StandardAtomsphere(.) %>%
+    group_by(h) %>%
+    mutate(
+      Clmax = Clclean,
+      qinf = 1/2 * rho * Vinf,
+      Cl = W * qinf * S,
+      Cd = Cd0 + K * Cl^2,
+      ClCd = Cl/Cd,
+      ClCdstar = 1 / sqrt(4 * Cd0 * K),
+      Vmin = Vmin(rho, WS, Clmax),
+      Vstar = sqrt(2 / rho * W / S) * (K / Cd0) ^ 0.25,
+      V32 = (1 / 3) ^ (1 / 4) * Vstar,
+      Vcruise = Mach * a,
+      PRmin = PRmin(rho, W, S, Cd0, K),
+      PR = PR(Vinf, rho, W, S, Cd0, K),
+      TRmin = W / ClCdstar,
+      TR = W / ClCd,
+      PA = PA(P0, sigma),
+      Pexc = PA - PR,
+      TA = PA/Vinf,
+      Texc = TA-TR
+    ) %>%
+    filter(Pexc >= 0) %>%
+    rowwise() %>%
+    mutate(VmaxP = VmaxP(PA, rho, W, S, Cd0, K, VmaxP1, VmaxP2)) %>%
+    ungroup()
+}
+

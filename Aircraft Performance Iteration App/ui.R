@@ -63,7 +63,8 @@ shinyUI(fluidPage(
           numericInput("P0eng", "Power per Engine (W)", input_initial$P0eng, step = 10000),
           numericInput("Etatotal", "Total Battery to Propeller Efficiency", input_initial$Etatotal, step = 0.05)),
         column(6,
-          numericInput("P0","Total Static Power (x2 Engine Power) (W)", input_initial$P0, step = 10000))
+          numericInput("P0","Total Static Power (x2 Engine Power) (W)", input_initial$P0, step = 10000),
+          numericInput("alt_s", "Altitude Power Derating Exponent", input_initial$alt_s, step = 0.05))
       ),
       #
       h4("Takeoff Parameters"),
@@ -95,9 +96,9 @@ shinyUI(fluidPage(
       #
       tabPanel("Operating Window",
                column(6,numericInput("OW_nh","Number of Height Curves", 51),
-                      numericInput("OW_maxh", "Maximum Height (m)", 12500)),
+                      numericInput("OW_maxh", "Maximum Height (m)", 8800)),
                column(6,numericInput("OW_nv","Number of Velocity Points", 51),
-                      numericInput("OW_maxv", "Maximum Velocity", 200)),
+                      numericInput("OW_maxv", "Maximum Velocity", 180)),
                helpText("Things can get quite wacky. Play around with the maximum height until it works"),
                plotOutput("OperatingWindowPlot", click = "OWV_click", dblclick = "OWV_dblclick",
                           hover = "OWV_hover", brush = "OWV_brush"),

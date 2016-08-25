@@ -57,6 +57,7 @@ shinyServer(function(session, input, output) {
     updateNumericInput(session, "P0eng", value = inputdatavars$P0eng)
     updateNumericInput(session, "P0", value = inputdatavars$P0)
     updateNumericInput(session, "Etatotal", value = inputdatavars$Etatotal)
+    updateNumericInput(session, "alt_s", value = inputdatavars$alt_s)
     
     updateNumericInput(session, "ClG", value = inputdatavars$ClG)
     updateNumericInput(session, "Cd0G", value = inputdatavars$Cd0G)
@@ -82,7 +83,7 @@ shinyServer(function(session, input, output) {
       data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
                  Cd0 = input$Cd0, Clclean = input$Clclean, Clflaps = input$Clflaps, Clhls = input$Clhls,
                  m = input$m, W = input$W, WS = input$WS,
-                 P0eng = input$P0eng, P0 = input$P0, Etatotal = input$Etatotal,
+                 P0eng = input$P0eng, P0 = input$P0, Etatotal = input$Etatotal, alt_s = input$alt_s,
                  ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
       )
     #--- Allow a user to download their inputs
@@ -105,7 +106,7 @@ shinyServer(function(session, input, output) {
       data.frame(S = input$S, b = input$b, AR = input$AR, e = input$e, K = input$K,
                  Cd0 = input$Cd0, Clclean = input$Clclean, Clflaps = input$Clflaps, Clhls = input$Clhls,
                  m = input$m, W = input$W, WS = input$WS,
-                 P0eng = input$P0eng, P0 = input$P0, Etatotal = input$Etatotal,
+                 P0eng = input$P0eng, P0 = input$P0, Etatotal = input$Etatotal, alt_s = input$alt_s,
                  ClG = input$ClG, Cd0G = input$Cd0G, hground = input$hground
       )
     
@@ -159,6 +160,52 @@ shinyServer(function(session, input, output) {
       )
     })
     
+## Operating Window ======================================================================
+    # Get required plotting parameters
+    nh <- input$OW_nh
+    nv <- input$OW_nv
+    maxh <- input$OW_maxh
+    maxv <- input$OW_maxv
+    # Create the plotting window
+    operatingwindow  <-
+      ThrustPowerCurves(inputvals, specifications, 0, maxh, nh, 0, maxv, nv, 1, 250)
+    # Find plotting limits
+    OW_xlow <-
+      operatingwindow %>% arrange(Pexc) %>% select(Vinf)
+    OW_xupp <- head(OW_xlow, 1)[[1]] * 1.1
+    OW_xlow <- tail(OW_xlow, 1)[[1]] * 0.9
+    
+    # Ouput a plot of the Excess Power
+    output$OperatingWindowPowerPlot <- renderPlot({
+      ggplot(operatingwindow) +
+        geom_point(data = filter(operatingwindow, Pexc >= 0),
+                   aes(x = Vinf, y = h, colour = Pexc)) +
+        geom_path(aes(x = Vmin, y = h), colour = "red") +
+        geom_path(aes(x = Vmin * 1.2, y = h), colour = "orange") +
+        geom_path(aes(x = VmaxP, y = h), colour = "purple") +
+        geom_path(aes(x = Vstar, y = h), colour = "green") +
+        geom_path(aes(x = Vcruise, y = h), colour = "blue") +
+        scale_colour_gradientn(colours = brewer.pal(3, "RdYlGn"),
+                               guide = "colourbar",
+                               name = "Excess Power") +
+        xlim(0, OW_xupp)+
+        labs(list(title = "Excess Power and Height", x = "Vinf (m/s)", y = "Altitude (m)", colour = "Excess Power"))
+    })
+    
+    # Ouput a plot of the Velocities
+    output$OperatingWindowPlot <- renderPlot({
+      ggplot(operatingwindow) +
+        geom_path(aes(x = Vmin, y = h, colour = "Stall Speed")) +
+        geom_path(aes(x = Vmin * 1.2, y = h, colour = "Safety Factor 1.2")) +
+        geom_path(aes(x = VmaxP, y = h, colour = "Maximum Speed")) +
+        geom_path(aes(x = Vstar, y = h, colour = "(L/D)*")) +
+        geom_path(aes(x = Vcruise, y = h, colour = "Cruise Specification")) +
+        scale_color_manual(values = c("Stall Speed" = "red", "Safety Factor 1.2" = "orange",
+                                      "Maximum Speed" = "purple", "Cruise Specification" = "blue",
+                                      "(L/D)*" = "green")) +
+        xlim(OW_xlow, OW_xupp) +
+        labs(list(title = "Velocities and Height", x = "Vinf (m/s)", y = "Altitude (m)", colour = "Velocity"))
+    })
     
 ## Climb ======================================================================
     heights <- data.frame(type = c("Sea Level", "2nd Seg", "2nd Seg OEI", "Cruise", "Ceiling"),
