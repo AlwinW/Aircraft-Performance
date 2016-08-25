@@ -2,6 +2,8 @@
 #--- Takeoff and Landing
 #============================
 # Using generalised methods
+# Need to have a more general Air Dist based on TRUE climb and Cl
+
 
 groundmu <- data.frame(names = c("Dry Concrete", "Wet Concrete", "Icy Concrete"),
                        brakesoff = c(0.04, 0.05, 0.02), #NB: 0.03-0.05 for dry
