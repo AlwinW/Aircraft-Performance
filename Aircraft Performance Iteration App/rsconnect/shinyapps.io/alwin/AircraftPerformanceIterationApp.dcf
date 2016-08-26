@@ -2,9 +2,9 @@ name: AircraftPerformanceIterationApp
 account: alwin
 server: shinyapps.io
 appId: 121933
-bundleId: 540715
+bundleId: 541300
 url: https://alwin.shinyapps.io/AircraftPerformanceIterationApp/
-when: 1472131243.16207
+when: 1472174818.41995
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: Helper Main Functions (copy).R|Power.csv|Rough Iteration Attempt.R

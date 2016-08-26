@@ -327,7 +327,7 @@ shinyServer(function(session, input, output) {
         labs(list(title = "Energy Usesage", x = "Mission Segment", y = "Percentage", colour = "Mission Segment"))
     })
     
-    PlotPower <- MainIterationOut$Power %>% gather(key, value, -type, -R_total)
+    PlotPower <- MainIterationOut$Power %>% mutate(`D x V` = Drag * Vinf) %>% gather(key, value, -type, -R_total)
     PlotPower$type <- factor(PlotPower$type, levels = unique(PlotPower$type))
     PlotPower$key <- factor(PlotPower$key, levels = unique(PlotPower$key))
     
@@ -339,6 +339,30 @@ shinyServer(function(session, input, output) {
         labs(list(title = "Mission Analysis", x = "Range", y = "", colour = "Mission Segment"))
     })
     
+    ## To do up better later ####
+    ggplot(filter(PlotPower, key %in% c("Vinf", "h")), 
+           aes(x=R_total, colour = type, width = 2)) + 
+      geom_line(aes(y = value)) + 
+      facet_wrap(~key, scales = "free_y") +
+      labs(list(title = "Input Values", x = "Range", y = "", colour = "Mission Segment"))
+    
+    ggplot(filter(PlotPower, key %in% c("Cl", "Cd", "ClCd", "theta","Drag", "D x V")), 
+           aes(x=R_total, colour = type, width = 2)) + 
+      geom_line(aes(y = value)) + 
+      facet_wrap(~key, scales = "free_y", ncol = 2) +
+      labs(list(title = "Calculated Parameters", x = "Range", y = "", colour = "Mission Segment"))
+    
+    ggplot(filter(PlotPower, key %in% c("Power", "Wb_total")), 
+           aes(x=R_total, colour = type, width = 2)) + 
+      geom_line(aes(y = value)) + 
+      facet_wrap(~key, scales = "free_y") +
+      labs(list(title = "Power Usage and Total Battery Weight", x = "Range", y = "", colour = "Mission Segment"))
+    
+    WeightFracs <- MainIterationOut$WeightFracs
+    WeightFracs$Description <- factor(WeightFracs$Description, levels = WeightFracs$Description)
+    ggplot(WeightFracs[1:3,1:2]) + geom_bar(aes(Description, weight = Value, colour = Description)) +
+      geom_text(aes(x = Description, y = Value/2, label = round(Value, 4)), colour="white")  + 
+      labs(list(title = "Weight Fractions", x = "Weight", y = "Fraction", colour = "Mission Segment"))
     
     #--- Allow a user to download power calcs
     output$downloadPower <- downloadHandler(

@@ -477,8 +477,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = AreaDur,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PA) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PA,
+           Drag = D) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   # Transition
   PTOtr <- filter(AirDistTO, type == "All Engines") %>%
     ungroup() %>%
@@ -505,8 +506,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PA) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PA,
+           Drag = qinf * Cd * S) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Ground Roll")
@@ -530,7 +532,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            h = ifelse(SC > 0, hTR, Hobs))
   Pseg1 <- data.frame(Pseg1)
   Pseg1 <- Pseg1[rep(row.names(Pseg1), each = 2), 1:length(Pseg1)]
-  pPseg1$duration <- c(0, Pseg1$duration[2])
+  Pseg1$duration <- c(0, Pseg1$duration[2])
   Pseg1$h <- c(Pseg1$h[2], Pseg1$Hobs[1])
   Pseg1 <- Pseg1 %>%
     mutate(t = cumsum(duration),
@@ -541,8 +543,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PA) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PA,
+           Drag = qinf * Cd * S) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Segment 1")
@@ -579,8 +582,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PA) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PA,
+           Drag = qinf * Cd * S) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Segment 2")
@@ -617,8 +621,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = 1/2 * (Vinf + lag(Vinf,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PA) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PA,
+           Drag = D) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Segment 3")
@@ -655,8 +660,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PA) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PA,
+           Drag = qinf * Cd * S) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Segment 4")
@@ -716,8 +722,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PR) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PR,
+           Drag = D) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Descent")
@@ -749,8 +756,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PR) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PR,
+           Drag = D) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Flare")
@@ -773,8 +781,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = AreaDur,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PA) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PA,
+           Drag = D) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Ground Roll")
@@ -803,8 +812,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Rduration = 1/2 * (Vh + lag(Vh,1)) * duration,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PR) %>%
-    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power)
+           Power = PR,
+           Drag = D) %>%
+    select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
 
   if (is.function(updateProgress)) {
     text <- paste0("Power - Cruise")
@@ -820,7 +830,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            Wb_total = Wb_total * 1.05,
            Vb = Wb_total/inp$Dens)
   PowerSummary <- Power %>%
-    select(type, Vinf, Vstall, Clmax, Cl, Cd, ClCd, theta, Power, t_total, Eeng_total, Wb_total, Vb)
+    select(type, h, Vinf, Vstall, Clmax, Cl, Cd, ClCd, theta, Drag, Power, t_total, Eeng_total, Wb_total, Vb)
   
   if (is.function(updateProgress)) {
     text <- paste0("Power - Total")
