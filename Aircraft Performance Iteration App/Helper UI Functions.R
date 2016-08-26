@@ -20,8 +20,8 @@ input_initial <- data.frame(
   W = 63742,
   WS = 2601.72,
   
-  P0eng = 180000,
-  P0 = 360000,
+  P0eng = 200000,
+  P0 = 400000,
   Etatotal = 0.80,
   alt_s = 0,
   

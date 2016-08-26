@@ -346,7 +346,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     iteration,
     data.frame(
       Description = c(
-        "2nd Segment Percentage Gradient",
+        "2nd Segment PerGrad",
         "Cruise Climb Rate",
         "Ceiling Climb Rate"
       ),
@@ -890,6 +890,15 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     )
   )
   
+  # Inputs
+  iteration$m = inp$m
+  iteration$S = inp$S
+  # Outputs
+  iteration$W = inp$W
+  iteration$WS = inp$WS
+  iteration$AR = inp$AR
+  iteration$Clflaps = inp$Clflaps
+  iteration$P0eng = inp$P0eng
   
 ## Return the result(s) ======================================================================
   if (out == "Summary")

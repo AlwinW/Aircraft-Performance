@@ -43,21 +43,36 @@ inputvals <- input_initial
 # Initial Data Frame
 iterationvals <- input_initial[rep(row.names(input_initial), each = 2), 1:length(input_initial)]
 # Set the changing variable
-iterationvals$Clhls <- c(1.2, 1.8)
+iterationvals$m <- c(6000, 6500)
 # Convert dataframe to a list
 iterationvals <- split(iterationvals, seq(nrow(iterationvals)))
 # Give id names (these are preserved)
-names(iterationvals) <- c("x", "y")
+# names(iterationvals) <- c("x", "y")
+
+
+iterationvals <- input_initial
+
+IterationCalcs <- function(iterationvals){
+  iterationvals0 <- iterationvals
+  iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  
+  iterationadj <- iteration0 %>%
+    mutate(okay = ifelse(
+      
+    ))
+  
+  
+}
+
+
 
 iterationout <- lapply(iterationvals, function(x) suppressWarnings(MainIterationFunction(x, specifications, out = "Iteration")))
-iterationout <- do.call("rbind", iterationout)
 
-iterationout <-  iterationout %>%
-  gather(key, value, -id, - Description) %>% 
-  unite(temp, Description, key) %>%
-  spread(temp, value)
-
-melt(iterationout, id.vars = c("Description", "Specification", "Minimise", "Under", "Over"),
+melt(iterationout, 
+     id.vars = c("Description", "Specification", 
+                  "m", "S", 
+                  "W", "WS", "AR", "Clflaps", "P0eng",
+                  "Minimise", "Under", "Over"),
      variable.name = "key",
      value.name = "value")
 
