@@ -23,7 +23,7 @@ input_initial <- data.frame(
   P0eng = 180000,
   P0 = 360000,
   Etatotal = 0.80,
-  alt_s = 1,
+  alt_s = 0,
   
   ClG = 0.25,
   Cd0G = 0.025,

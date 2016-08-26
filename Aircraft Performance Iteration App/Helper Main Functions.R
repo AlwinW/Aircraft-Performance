@@ -317,7 +317,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
            qinf = 1/2 * rho * Vinf^2,
            Cl = W / (qinf * S),
            Cd = Cd0 + K * Cl^2,
-           PA = PA(P0eng * Ne, sigma)
+           PA = PA(P0eng, sigma) * Ne
     ) %>%
     rowwise() %>%
     do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
@@ -326,7 +326,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     summary,
     data.frame(
       Description = c(
-        "2nd Segment Percentage Gradient",
+        "2nd Segment PerGrad",
         "Cruise Climb Rate",
         "Ceiling Climb Rate"
       ),
@@ -894,8 +894,10 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
 ## Return the result(s) ======================================================================
   if (out == "Summary")
     return(summary)
+  else if (out == "Iteration")
+    return(iteration)
   else if (out == "All")
-    return(list(summary = summary, out1 = out1, AeroParamsTable = AeroParamsTable,
+    return(list(iteration = iteration, summary = summary, out1 = out1, AeroParamsTable = AeroParamsTable,
                 out2 = out2, AccelerateStop = AccelerateStop, AccelerateContinue = AccelerateContinue, 
                 AccelerateLiftoff = AccelerateLiftoff, BFL = BFL,
                 out3 = out3, out4 = out4, DeccelerateLand = DeccelerateLand,
@@ -989,7 +991,7 @@ ClimbFunction <- function(inputvals, specifications, heights) {
       Cl = W / (qinf * S),
       Cd = Cd0 + K * Cl^2,
       D = qinf * S * Cd,
-      PA = PA(P0, sigma) * Ne,
+      PA = PA(P0eng, sigma) * Ne,
       TA = PA / Vinf) %>%
     do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W))) %>%
     ungroup() %>%

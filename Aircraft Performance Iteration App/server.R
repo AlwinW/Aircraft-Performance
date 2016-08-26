@@ -8,6 +8,7 @@ library(purrr)
 library(broom)
 library(ggplot2)
 library(RColorBrewer)
+library(reshape2)
 
 #--- Set the initial values
 source("Helper UI Functions.R")
