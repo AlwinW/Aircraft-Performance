@@ -38,43 +38,144 @@ specifications <- data.frame(
 
 inputvals <- input_initial
 
-## Iterations ======================================================================
-
-# Initial Data Frame
-iterationvals <- input_initial[rep(row.names(input_initial), each = 2), 1:length(input_initial)]
-# Set the changing variable
-iterationvals$m <- c(6000, 6500)
-# Convert dataframe to a list
-iterationvals <- split(iterationvals, seq(nrow(iterationvals)))
-# Give id names (these are preserved)
-# names(iterationvals) <- c("x", "y")
-
-
 iterationvals <- input_initial
 
 IterationCalcs <- function(iterationvals){
-  iterationvals0 <- iterationvals
+  iterationvals <- iterationvals %>%
+    mutate(b = sqrt(AR * S),
+           K = 1/(pi * AR * e),
+           W = m * 9.8065,
+           WS = W/S,
+           P0 = P0eng * 2)
   iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
   
-  iterationadj <- iteration0 %>%
-    mutate(okay = ifelse(
-      
-    ))
+  # Power
+  while (iteration0[6,2] <= iteration0[6,3] |
+         iteration0[7,2] <= iteration0[7,3] |
+         iteration0[8,2] <= iteration0[8,3]) {
+    iterationvals$P0eng = iterationvals$P0eng + 5000
+    iterationvals <- iterationvals %>%
+      mutate(b = sqrt(AR * S),
+             K = 1/(pi * AR * e),
+             W = m * 9.8065,
+             WS = W/S,
+             P0 = P0eng * 2)
+    iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  }
   
+  # Takeoff
+  while (iteration0[4,2] >= iteration0[4,3] |
+         iteration0[5,2] >= iteration0[5,3]) {
+    iterationvals$Clflaps = iterationvals$Clflaps + 0.025
+    iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  }
   
+  # Landing
+  while (iteration0[9,2] >= iteration0[9,3]) {
+    iterationvals$Clhls = iterationvals$Clhls + 0.025
+    iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  }
+  
+  # Weight Analysis
+  while (iteration0[12,2] <= iteration0[12,3]) {
+    iterationvals$AR = iterationvals$AR + 0.5
+    iterationvals <- iterationvals %>%
+      mutate(b = sqrt(AR * S),
+             K = 1/(pi * AR * e),
+             W = m * 9.8065,
+             WS = W/S,
+             P0 = P0eng * 2)
+    iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  }
+  
+  return(iteration0)
 }
 
 
+iterationout <- lapply(iterationvals, function(x) IterationCalcs(x))
 
-iterationout <- lapply(iterationvals, function(x) suppressWarnings(MainIterationFunction(x, specifications, out = "Iteration")))
 
-melt(iterationout, 
-     id.vars = c("Description", "Specification", 
-                  "m", "S", 
-                  "W", "WS", "AR", "Clflaps", "P0eng",
+## Iterations ======================================================================
+
+# Initial Data Frame
+iterationvals_df <- input_initial[rep(row.names(input_initial), each = 2), 1:length(input_initial)]
+# Set the changing variable
+iterationvals_df$m <- c(6000, 6500)
+# Convert dataframe to a list
+# iterationvals_df <- split(iterationvals, seq(nrow(iterationvals)))
+# Give id names (these are preserved)
+# names(iterationvals) <- c("x", "y")
+
+plot = list()
+
+for (i in 1:2) {
+  iterationvals <- iterationvals_df[i,]
+  iterationvals$b = sqrt(iterationvals$AR * iterationvals$S)
+  iterationvals$K = 1/(pi * iterationvals$AR * iterationvals$e)
+  iterationvals$W = iterationvals$m * 9.8065
+  iterationvals$WS = iterationvals$W/iterationvals$S
+  iterationvals$P0 = iterationvals$P0eng * 2
+  iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  
+  # Power
+  while (iteration0[6,2] <= iteration0[6,3] |
+         iteration0[7,2] <= iteration0[7,3] |
+         iteration0[8,2] <= iteration0[8,3]) {
+    iterationvals$P0eng = iterationvals$P0eng + 5000
+    iterationvals$b = sqrt(iterationvals$AR * iterationvals$S)
+    iterationvals$K = 1/(pi * iterationvals$AR * iterationvals$e)
+    iterationvals$W = iterationvals$m * 9.8065
+    iterationvals$WS = iterationvals$W/iterationvals$S
+    iterationvals$P0 = iterationvals$P0eng * 2
+    iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  }
+  
+  # Takeoff
+  while (iteration0[4,2] >= iteration0[4,3] |
+         iteration0[5,2] >= iteration0[5,3]) {
+    iterationvals$Clflaps = iterationvals$Clflaps + 0.025
+    iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  }
+  
+  # Landing
+  while (iteration0[9,2] >= iteration0[9,3]) {
+    iterationvals$Clhls = iterationvals$Clhls + 0.025
+    iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  }
+  
+  # Weight Analysis
+  while (iteration0[12,2] <= iteration0[12,3]) {
+    iterationvals$AR = iterationvals$AR + 0.5
+    iterationvals$b = sqrt(iterationvals$AR * iterationvals$S)
+    iterationvals$K = 1/(pi * iterationvals$AR * iterationvals$e)
+    iterationvals$W = iterationvals$m * 9.8065
+    iterationvals$WS = iterationvals$W/iterationvals$S
+    iterationvals$P0 = iterationvals$P0eng * 2
+    iteration0 <- suppressWarnings(MainIterationFunction(iterationvals, specifications, out = "Iteration"))
+  }
+  
+  plot[[i]] = iteration0
+  
+}
+
+melt(plot,
+     id.vars = c("Description", "Specification",
+                  "m", "S",
+                  "W", "WS", "AR", "Clflaps", "Clhls", "P0eng",
                   "Minimise", "Under", "Over"),
      variable.name = "key",
      value.name = "value")
+
+
+# iterationout <- lapply(iterationvals, function(x) suppressWarnings(MainIterationFunction(x, specifications, out = "Iteration")))
+# 
+# melt(iterationout, 
+#      id.vars = c("Description", "Specification", 
+#                   "m", "S", 
+#                   "W", "WS", "AR", "Clflaps", "Clhls", "P0eng",
+#                   "Minimise", "Under", "Over"),
+#      variable.name = "key",
+#      value.name = "value")
 
 
 

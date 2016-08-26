@@ -869,21 +869,9 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   iteration <- rbind(
     iteration,
     data.frame(
-      Description = c(
-        "2nd Segment Percentage Gradient",
-        "Cruise Climb Rate",
-        "Ceiling Climb Rate"
-      ),
-      Iteration = c(
-        filter(out3, type == "2nd Seg OEI Climb")$PerGrad,
-        filter(out3, type == "Cruise")$ClimbRate,
-        filter(out3, type == "Ceiling")$ClimbRate
-      ),
-      Specification = c(
-        inp$PerGrad2Seg,
-        inp$ClimbCruise,
-        inp$ClimbCeil
-      ),
+      Description = WeightFracs[1:3,1],
+      Iteration = WeightFracs[1:3,2],
+      Specification = c(NA, NA, 0.4),
       Minimise = c(0, 0, 0),
       Under = c(0, 0, 0),
       Over = c(0, 0,0)
@@ -898,6 +886,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   iteration$WS = inp$WS
   iteration$AR = inp$AR
   iteration$Clflaps = inp$Clflaps
+  iteration$Clhls = inp$Clhls
   iteration$P0eng = inp$P0eng
   
 ## Return the result(s) ======================================================================
