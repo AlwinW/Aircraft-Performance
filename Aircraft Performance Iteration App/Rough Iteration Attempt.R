@@ -25,6 +25,9 @@ input_initial <- data.frame(
   hground = 2.5
 )
 
+
+# Consider try using False Position method or something to try find a braketed root!
+
 specifications <- data.frame(
   Variable = c("Mp", "Wp", "E", "Dens", "Srun", "Hobs", "Vappmax", "PerGrad2Seg", "ClimbCruise", "ClimbCeil", "AltCruise", "AltCeil", 
                "Mach", "Range", "LoadMax", "LoadMin"),
