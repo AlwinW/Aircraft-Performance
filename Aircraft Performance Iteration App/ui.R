@@ -139,6 +139,7 @@ shinyUI(fluidPage(
                verbatimTextOutput("RoughLanding")),
       #
       tabPanel("General Weight Fractions",
+               plotOutput("WeightFracs", click = "WF_click", hover = "WF_click"),
                verbatimTextOutput("GenWeightFracs1"),
                dataTableOutput("GenWeightFracs2"),
                verbatimTextOutput("RoughPower")),
@@ -146,6 +147,9 @@ shinyUI(fluidPage(
       tabPanel("Mission Analysis", 
                plotOutput("PowerSummary", click = "PS_click", hover = "PS_hover"),
                plotOutput("PowerFacet", click = "PF_click", hover = "PF_hover"),
+               plotOutput("MissionInput", click = "MI_click", hover = "MI_click"),
+               plotOutput("MissionParams", click = "MP_click", hover = "MP_click"),
+               plotOutput("MissionOutput", click = "MO_click", hover = "MO_click"),
                downloadButton("downloadPower", "Download Power Data as CSV"),
                fluidRow(dataTableOutput("PowerTable"))),
       tabPanel("Table", tableOutput("table")),
