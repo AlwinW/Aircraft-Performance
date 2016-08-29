@@ -46,6 +46,12 @@ var_e = seq(0.8, 0.95, 0.05)
 iterationvals <- input_initial[rep(rownames(input_initial), each = length(var_e) * length(var_m)), 1:length(input_initial)]
 iterationvals$m <- rep(var_m, each = length(var_e))
 iterationvals$e <- rep(var_e, times = length(var_m))
+iterationvals <- iterationvals %>%
+  rowwise() %>%
+  do(., data.frame(., tempWS = seq(1600, 3200, 200))) %>%
+  ungroup() %>%
+  mutate(S = m*9.8065 / tempWS) %>%
+  select(-tempWS)
   
 # Update the other parameters based on m, e, etc (functionalise)
 UpdateParams <- function(input) {
@@ -58,7 +64,20 @@ UpdateParams <- function(input) {
 }
 
 # Apply the updates to the parameters
-iterationvals <- UpdateParams(iterationvals)
+iterationvals <- data.frame(UpdateParams(iterationvals))
+
+for (i in 1:nrow(iterationvals)) {
+  iterationvals0 <- UpdateParams(iterationvals[i,])
+  iteration[[i]] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
+  print(paste0(i, " done"))
+  
+}
+
+
+
+
+
+
 
 
 # Test for convergence / root finding
@@ -77,10 +96,12 @@ iterationlong <-  melt(iteration,
                  "W", "WS", "AR", "Clflaps", "Clhls", "P0eng",
                  "Minimise", "Under", "Over"),
      variable.name = "key",
-     value.name = "value")
+     value.name = "melt") %>%
+  select(-key)
 
 # THIS IS SORT OF WHAT I WANT!!
-head(gather(iterationlong, name, value, -L1, -Description) %>% spread(Description, value))
+asdf <- 
+  head(gather(iterationlong, name, value, -key, -L1, -Description) %>% spread(Description, value))
 
 ggplot(iterationlong) +
   
