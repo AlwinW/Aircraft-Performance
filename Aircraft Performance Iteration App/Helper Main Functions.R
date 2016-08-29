@@ -881,6 +881,7 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
   # Inputs
   iteration$m = inp$m
   iteration$S = inp$S
+  iteration$Cd0 = inp$Cd0
   # Outputs
   iteration$W = inp$W
   iteration$WS = inp$WS
