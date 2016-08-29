@@ -878,17 +878,19 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     )
   )
   
-  # Inputs
-  iteration$m = inp$m
-  iteration$S = inp$S
-  iteration$Cd0 = inp$Cd0
-  # Outputs
-  iteration$W = inp$W
-  iteration$WS = inp$WS
-  iteration$AR = inp$AR
-  iteration$Clflaps = inp$Clflaps
-  iteration$Clhls = inp$Clhls
-  iteration$P0eng = inp$P0eng
+  iteration <- rbind(
+    iteration,
+    data.frame(
+      Description = c("m", "S", "Cd0", "e",
+                      "W", "WS", "AR", "Clflaps", "Clhls", "P0eng"),
+      Iteration = c(inp$m, inp$S, inp$Cd0, inp$e,
+                    inp$W, inp$WS, inp$AR, inp$Clflaps, inp$Clhls, inp$P0eng),
+      Specification = NA,
+      Minimise = NA,
+      Under = NA,
+      Over = NA
+    )
+  )
   
 ## Return the result(s) ======================================================================
   if (out == "Summary")

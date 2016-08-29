@@ -66,19 +66,34 @@ UpdateParams <- function(input) {
 # Apply the updates to the parameters
 iterationvals <- data.frame(UpdateParams(iterationvals))
 
+iteration <- list()
+pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
 for (i in 1:nrow(iterationvals)) {
   iterationvals0 <- UpdateParams(iterationvals[i,])
   iteration[[i]] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
-  print(paste0(i, " done"))
-  
+  setTxtProgressBar(pb, i)
 }
 
 
+iterationlong <-  melt(iteration,
+                       id.vars = c("Description", "Specification",
+                                   "Minimise", "Under", "Over"),
+                       variable.name = "key",
+                       value.name = "Iteration") %>%
+  select(-key, -Minimise, -Under, -Over) 
 
+asdf <- iterationlong %>%
+  unite(Description, Description, L1, sep = "._")%>%
+  gather(name, value, -Description) %>%
+  separate(Description, c("Description", "ID"), sep="\\._") %>%
+  mutate(ID = as.integer(ID)) %>%
+  spread(Description, value) %>%
+  arrange(ID, name)
 
-
-
-
+ggplot(filter(asdf, name == "Iteration")) +
+  geom_point(aes(x = m, y = WS, colour = `Empty Weight`))
+ggplot(filter(asdf, name == "Iteration")) +
+  geom_point(aes(x = Cd0, y = m, colour = `Empty Weight`))
 
 # Test for convergence / root finding
 var_Clflaps = seq(0.2, 2.5, 0.1)
@@ -103,7 +118,7 @@ iterationlong <-  melt(iteration,
 asdf <- 
   head(gather(iterationlong, name, value, -key, -L1, -Description) %>% spread(Description, value))
 
-ggplot(iterationlong) +
+
   
 
 
