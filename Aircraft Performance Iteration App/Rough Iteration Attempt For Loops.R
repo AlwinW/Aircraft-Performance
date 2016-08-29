@@ -68,18 +68,22 @@ iterationvals$Clflaps <- rep(var_Clflaps)
 iteration <- list()
 for (i in 1:length(var_Clflaps)) {
   iterationvals0 <- UpdateParams(iterationvals[i,])
-  iteration[i] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
+  iteration[[i]] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
 }
 
-melt(iteration,
+iterationlong <-  melt(iteration,
      id.vars = c("Description", "Specification",
-                 "m", "S",
+                 "m", "S", "Cd0",
                  "W", "WS", "AR", "Clflaps", "Clhls", "P0eng",
                  "Minimise", "Under", "Over"),
      variable.name = "key",
      value.name = "value")
 
+# THIS IS SORT OF WHAT I WANT!!
+head(gather(iterationlong, name, value, -L1, -Description) %>% spread(Description, value))
 
+ggplot(iterationlong) +
+  
 
 
 
