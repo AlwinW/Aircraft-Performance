@@ -2,6 +2,7 @@
 #--- Main Iteration Solver
 #============================
 # This is the main iteration method in order to determine values
+# N.B. > Will need to trim this HEAPS later lel
 
 ## Initialise  ======================================================================
 
@@ -80,6 +81,28 @@ UpdateParams <- function(input) {
   input$WS <- input$W / input$S
   input$P0 <- input$P0eng * 2
   return(input)
+}
+
+#--- Calculate the climb in the 2nd segment OEI
+seg2oei <- function(out3) {
+  out3$type <- c("2nd Seg OEI Climb")
+  out3$Ne <- c(1)
+  out3$h <- c(out3$Hobs)
+  out3$Clmax <- out3$Clclean + c(out3$Clflaps)
+  # Determine the climb rates for each scenario
+  out3 <- StandardAtomsphere(out3) %>%
+    mutate(Vinf = Mach * a,
+           Vstall = Vmin(rho, WS, Clmax),
+           Vsafe = 1.2 * Vstall)
+  out3$Vinf <- c(out3$Vsafe[1])
+  out3 <- mutate(out3,
+                 qinf = 1/2 * rho * Vinf^2,
+                 Cl = W / (qinf * S),
+                 Cd = Cd0 + K * Cl^2,
+                 PA = PA(P0eng, sigma) * Ne) %>%
+    rowwise() %>%
+    do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+  return(data.frame(out3))
 }
 
 ## Begin Calculations ======================================================================
@@ -168,7 +191,7 @@ for (i in 1:nrow(iterationvals))  {
   #--- Check if Clhls is reasonable
   if (Clhls$xr < 0) Clhls$xr = 0
   #--- Return the result
-  iv0$Clhls <- xr
+  iv0$Clhls <- Clhls$xr
   iv0 <- UpdateParams(iv0)
   
 ## Determine AR from Sland ======================================================================
@@ -355,27 +378,38 @@ for (i in 1:nrow(iterationvals))  {
   iv0$P0eng <- P0eng
   iv0 <- UpdateParams(iv0)
   
-## Determine Clflaps ======================================================================
+## Determine Clflaps from seg 2 OEI ======================================================================
+  #--- Test if next power will be needed
+  maxflaps <- iv0
+  hlsclimb <- seg2oei(mutate(maxflaps, Clflaps = 0))$PerGrad
+  for (i in seq(0.2,maxflaps$Clhls,length.out = 20)) {
+    maxflaps$Clflaps <- i
+    hlsclimbi <- seg2oei(maxflaps)$PerGrad
+    if (hlsclimbi > hlsclimb) hlsclimb = hlsclimbi
+  }
+  
+  
+  maxflaps$Clflaps <- maxflaps$Clhls
+  hlsclimb <- seg2oei(maxflaps)$PerGrad
+  
+  #--- If there is enough Clhls
+  maxflaps <- iv0
+  
+  Clflapsplot <- data.frame()
+  for (i in seq(0.2,maxflaps$Clhls,length.out = 20)) {
+    maxflaps$Clflaps <- i
+    hlsclimb <- seg2oei(maxflaps)$PerGrad
+    Clflapsplot <- rbind(Clflapsplot, data.frame(x = i, y = hlsclimb))
+  }
+  ggplot(Clflapsplot, aes(x=x, y=y)) + geom_point()
+  maxflaps$Clflaps <- 1.5
+  hlsclimb <- seg2oei(maxflaps)$PerGrad
+  hlsclimb
+  
   
   #--- Determine the various climb rates required
   out3 <- iv0
-  out3$type <- c("2nd Seg OEI Climb")
-  out3$Ne <- c(1)
-  out3$h <- c(iv0$Hobs)
-  out3$Clmax <- iv0$Clclean + c(iv0$Clflaps)
-  # Determine the climb rates for each scenario
-  out3 <- StandardAtomsphere(out3) %>%
-    mutate(Vinf = Mach * a,
-           Vstall = Vmin(rho, WS, Clmax),
-           Vsafe = 1.2 * Vstall)
-  out3$Vinf <- c(out3$Vsafe[1])
-  out3 <- mutate(out3,
-                 qinf = 1/2 * rho * Vinf^2,
-                 Cl = W / (qinf * S),
-                 Cd = Cd0 + K * Cl^2,
-                 PA = PA(P0eng, sigma) * Ne) %>%
-    rowwise() %>%
-    do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+  seg2oei(out3)
   
 }
 
