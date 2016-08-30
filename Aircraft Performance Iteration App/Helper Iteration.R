@@ -119,30 +119,11 @@ for (i in 1:nrow(iterationvals))  {
   Clhls <- iv0 %>%
     mutate(h = 50*0.3048) %>%
     StandardAtomsphere(.) %>%
-    select(Clclean, Clhls, rho, WS, Vappmax)
-  fr <- Clhls %>%
-    mutate(fx = 10)
-  xr <- 1
-  del <- 0.01
-  #--- Modified Secant Method (NB: Could have solved analytically lol)
-  while (abs(fr$fx) > 0.001 | fr$fx < 0) {
-    Clhls0 <- mutate(Clhls, 
-                     Clmax = Clclean + xr, 
-                     Vapp = 1.3 * Vmin(rho, WS, Clmax),
-                     fx = Vappmax - Vapp)
-    Clhls1 <- mutate(Clhls, 
-                     Clmax = Clclean + xr + del, 
-                     Vapp = 1.3 * Vmin(rho, WS, Clmax),
-                     fx = Vappmax - Vapp)
-    xr <- xr - (del * Clhls0$fx) / (Clhls1$fx - Clhls0$fx)
-    fr <- mutate(Clhls, 
-                 Clmax = Clclean + xr, 
-                 Vapp = 1.3 * Vmin(rho, WS, Clmax),
-                 fx = Vappmax - Vapp)
-  }
+    select(Clclean, Clhls, rho, WS, Vappmax) %>%
+    mutate(xr = 2/rho * WS * (1.3/Vappmax)^2 - Clclean)
   
   #--- Check if Clhls is reasonable
-  if (xr < 0) xr = 0
+  if (Clhls$xr < 0) Clhls$xr = 0
   #--- Return the result
   iv0$Clhls <- xr
   
