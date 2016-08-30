@@ -200,342 +200,387 @@ for (i in 1:nrow(iterationvals))  {
   
   iv0 <- iterationvals[i,]
   
+  AR <- 15
+  ARold <- 10
+  
+  while (abs(AR - ARold) > 0.0001) {
+    # Store the AR from the previous iteration as ARold
+    # As requirements are changed in iv0, the weight fraction will also change
+    # Thus, keep on iterating until AR no longer changes.
+    ARold <- AR
+    
 ## Determine AR from Empty Weight ======================================================================
-  AR <- iv0
-  ARr <- AR %>%
-    mutate(fx = 10)
-  del <- 0.01
-  xr <- 15
-  xrold <- 10
-  
-  while(abs(ARr$fx) > 0.001 & abs(xr - xrold) > 0.001) {
-    #--- Initial Value Calculations
-    AR0 <- AR
-    AR0$AR <- xr
-    AR0 <- UpdateParams(AR0)
-    AR0 <- suppressWarnings(MainIterationFunction(AR0, out = "Iteration", oneinput = TRUE)) %>%
-      filter(Description == "Empty Weight") %>%
-      select(Iteration) %>%
-      mutate(xr = xr, fx = Iteration - target_We)
-    #--- Step Value Calculations
-    AR1 <- AR
-    AR1$AR <- xr + del
-    AR1 <- UpdateParams(AR1)
-    AR1 <- suppressWarnings(MainIterationFunction(AR1, out = "Iteration", oneinput = TRUE)) %>%
-      filter(Description == "Empty Weight") %>%
-      select(Iteration) %>%
-      mutate(xr = xr + del, fx = Iteration - target_We)
-    #--- New xr
-    xrold <- xr
-    xr <- xrold - (del * AR0$fx) / (AR1$fx - AR0$fx)
-    #--- New Value Calculations
-    ARr <- AR
-    ARr$AR <- xr + del
-    ARr <- UpdateParams(ARr)
-    ARr <- suppressWarnings(MainIterationFunction(ARr, out = "Iteration", oneinput = TRUE)) %>%
-      filter(Description == "Empty Weight") %>%
-      select(Iteration) %>%
-      mutate(xr = xr + del, fx = Iteration - target_We)
-  }
-  
-  iv0$AR <- xr
-  iv0 <- UpdateParams(iv0)
-  
-  
-## Determine Clhls from Vapp ======================================================================
-  #--- Initialise the while loop
-  Clhls <- iv0 %>%
-    mutate(h = 50*0.3048) %>%
-    StandardAtomsphere(.) %>%
-    select(Clclean, Clhls, rho, WS, Vappmax) %>%
-    mutate(xr = 2/rho * WS * (1.3/Vappmax)^2 - Clclean)
-  
-  #--- Check if Clhls is reasonable
-  if (Clhls$xr < 0) Clhls$xr = 0
-  #--- Return the result
-  iv0$Clhls <- Clhls$xr
-  iv0 <- UpdateParams(iv0)
-  
-## Determine AR from Sland ======================================================================
-  # Usually always met lol
-  
-## Determine P0end from Cruise and Ceiling Climb ======================================================================
-  cruise <- iv0
-  cruiser <- cruise %>%
-    mutate(fx = 10)
-  del <- 1
-  xr <- 180000
-  xrold <- 150000
-  
-  while((abs(cruiser$fx) > 0.001 & abs(xr - xrold) > 10) | cruiser$fx < 0) {
-    #--- Initial Value Calculations
-    cruise0 <- cruise
-    cruise0$P0eng <- xr
-    cruise0 <- UpdateParams(cruise0)
-    out3 <- cruise0
+    AR <- iv0
+    ARr <- AR %>%
+      mutate(fx = 10)
+    del <- 0.01
+    xr <- 15
+    xrold <- 10
+    
+    while(abs(ARr$fx) > 0.001 & abs(xr - xrold) > 0.001) {
+      #--- Initial Value Calculations
+      AR0 <- AR
+      AR0$AR <- xr
+      AR0 <- UpdateParams(AR0)
+      AR0 <- suppressWarnings(MainIterationFunction(AR0, out = "Iteration", oneinput = TRUE)) %>%
+        filter(Description == "Empty Weight") %>%
+        select(Iteration) %>%
+        mutate(xr = xr, fx = Iteration - target_We)
+      #--- Step Value Calculations
+      AR1 <- AR
+      AR1$AR <- xr + del
+      AR1 <- UpdateParams(AR1)
+      AR1 <- suppressWarnings(MainIterationFunction(AR1, out = "Iteration", oneinput = TRUE)) %>%
+        filter(Description == "Empty Weight") %>%
+        select(Iteration) %>%
+        mutate(xr = xr + del, fx = Iteration - target_We)
+      #--- New xr
+      xrold <- xr
+      xr <- xrold - (del * AR0$fx) / (AR1$fx - AR0$fx)
+      #--- New Value Calculations
+      ARr <- AR
+      ARr$AR <- xr + del
+      ARr <- UpdateParams(ARr)
+      ARr <- suppressWarnings(MainIterationFunction(ARr, out = "Iteration", oneinput = TRUE)) %>%
+        filter(Description == "Empty Weight") %>%
+        select(Iteration) %>%
+        mutate(xr = xr + del, fx = Iteration - target_We)
+    }
+    
+    iv0$AR <- xr
+    iv0 <- UpdateParams(iv0)
+    
+    
+  ## Determine Clhls from Vapp ======================================================================
+    #--- Initialise the while loop
+    Clhls <- iv0 %>%
+      mutate(h = 50*0.3048) %>%
+      StandardAtomsphere(.) %>%
+      select(Clclean, Clhls, rho, WS, Vappmax) %>%
+      mutate(xr = 2/rho * WS * (1.3/Vappmax)^2 - Clclean)
+    
+    #--- Check if Clhls is reasonable
+    if (Clhls$xr < 0) Clhls$xr = 0
+    #--- Return the result
+    iv0$Clhls <- Clhls$xr
+    iv0 <- UpdateParams(iv0)
+    
+  ## Determine AR from Sland ======================================================================
+    # Usually always met lol
+    
+  ## Determine P0end from Cruise and Ceiling Climb ======================================================================
+    cruise <- iv0
+    cruiser <- cruise %>%
+      mutate(fx = 10)
+    del <- 1
+    xr <- 180000
+    xrold <- 150000
+    
+    while((abs(cruiser$fx) > 0.001 & abs(xr - xrold) > 10) | cruiser$fx < 0) {
+      #--- Initial Value Calculations
+      cruise0 <- cruise
+      cruise0$P0eng <- xr
+      cruise0 <- UpdateParams(cruise0)
+      out3 <- cruise0
+      #
+      out3$type <- c("Cruise")
+      out3$Ne <- c(2)
+      out3$h <- c(cruise$AltCruise)
+      out3$Clmax <- cruise$Clclean
+      out3 <- StandardAtomsphere(out3) %>%
+        mutate(Vinf = Mach * a,
+               Vstall = Vmin(rho, WS, Clmax),
+               Vsafe = 1.2 * Vstall)
+      out3$Vinf <- c(out3$Vinf[1])
+      out3 <- mutate(out3,
+                     qinf = 1/2 * rho * Vinf^2,
+                     Cl = W / (qinf * S),
+                     Cd = Cd0 + K * Cl^2,
+                     PA = PA(P0eng, sigma) * Ne) %>%
+        rowwise() %>%
+        do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+      #
+      cruise0$fx <- out3$ClimbRate - cruise$ClimbCruise
+      #--- Step Value Calculations
+      cruise1 <- cruise
+      cruise1$P0eng <- xr + del
+      cruise1 <- UpdateParams(cruise1)
+      out3 <- cruise1
+      #
+      out3$type <- c("Cruise")
+      out3$Ne <- c(2)
+      out3$h <- c(cruise$AltCruise)
+      out3$Clmax <- cruise$Clclean
+      out3 <- StandardAtomsphere(out3) %>%
+        mutate(Vinf = Mach * a,
+               Vstall = Vmin(rho, WS, Clmax),
+               Vsafe = 1.2 * Vstall)
+      out3$Vinf <- c(out3$Vinf[1])
+      out3 <- mutate(out3,
+                     qinf = 1/2 * rho * Vinf^2,
+                     Cl = W / (qinf * S),
+                     Cd = Cd0 + K * Cl^2,
+                     PA = PA(P0eng, sigma) * Ne) %>%
+        rowwise() %>%
+        do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+      #
+      cruise1$fx <- out3$ClimbRate - cruise$ClimbCruise
+      #--- New xr
+      xrold <- xr
+      xr <- xrold - (del * cruise0$fx) / (cruise1$fx - cruise0$fx)
+      #--- New Value Calculations
+      cruiser <- cruise
+      cruiser$P0eng <- xr + del
+      cruiser <- UpdateParams(cruiser)
+      out3 <- cruiser
+      #
+      out3$type <- c("Cruise")
+      out3$Ne <- c(2)
+      out3$h <- c(cruise$AltCruise)
+      out3$Clmax <- cruise$Clclean
+      out3 <- StandardAtomsphere(out3) %>%
+        mutate(Vinf = Mach * a,
+               Vstall = Vmin(rho, WS, Clmax),
+               Vsafe = 1.2 * Vstall)
+      out3$Vinf <- c(out3$Vinf[1])
+      out3 <- mutate(out3,
+                     qinf = 1/2 * rho * Vinf^2,
+                     Cl = W / (qinf * S),
+                     Cd = Cd0 + K * Cl^2,
+                     PA = PA(P0eng, sigma) * Ne) %>%
+        rowwise() %>%
+        do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+      #
+      cruiser$fx <- out3$ClimbRate - cruise$ClimbCruise
+    }
+    
     #
-    out3$type <- c("Cruise")
-    out3$Ne <- c(2)
-    out3$h <- c(cruise$AltCruise)
-    out3$Clmax <- cruise$Clclean
-    out3 <- StandardAtomsphere(out3) %>%
-      mutate(Vinf = Mach * a,
-             Vstall = Vmin(rho, WS, Clmax),
-             Vsafe = 1.2 * Vstall)
-    out3$Vinf <- c(out3$Vinf[1])
-    out3 <- mutate(out3,
-                   qinf = 1/2 * rho * Vinf^2,
-                   Cl = W / (qinf * S),
-                   Cd = Cd0 + K * Cl^2,
-                   PA = PA(P0eng, sigma) * Ne) %>%
-      rowwise() %>%
-      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+    
+    ceil <- iv0
+    ceilr <- ceil %>%
+      mutate(fx = 10)
+    del <- 1
+    xr <- 180000
+    xrold <- 150000
+    
+    while((abs(ceilr$fx) > 0.001 & abs(xr - xrold) > 10) | ceilr$fx < 0) {
+      #--- Initial Value Calculations
+      ceil0 <- ceil
+      ceil0$P0eng <- xr
+      ceil0 <- UpdateParams(ceil0)
+      out3 <- ceil0
+      #
+      out3$type <- c("Ceil")
+      out3$Ne <- c(2)
+      out3$h <- c(ceil$AltCeil)
+      out3$Clmax <- ceil$Clclean
+      out3 <- StandardAtomsphere(out3) %>%
+        mutate(Vinf = Mach * a,
+               Vstall = Vmin(rho, WS, Clmax),
+               Vsafe = 1.2 * Vstall)
+      out3$Vinf <- c(out3$Vinf[1])
+      out3 <- mutate(out3,
+                     qinf = 1/2 * rho * Vinf^2,
+                     Cl = W / (qinf * S),
+                     Cd = Cd0 + K * Cl^2,
+                     PA = PA(P0eng, sigma) * Ne) %>%
+        rowwise() %>%
+        do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+      #
+      ceil0$fx <- out3$ClimbRate - ceil$ClimbCeil
+      #--- Step Value Calculations
+      ceil1 <- ceil
+      ceil1$P0eng <- xr + del
+      ceil1 <- UpdateParams(ceil1)
+      out3 <- ceil1
+      #
+      out3$type <- c("Ceil")
+      out3$Ne <- c(2)
+      out3$h <- c(ceil$AltCeil)
+      out3$Clmax <- ceil$Clclean
+      out3 <- StandardAtomsphere(out3) %>%
+        mutate(Vinf = Mach * a,
+               Vstall = Vmin(rho, WS, Clmax),
+               Vsafe = 1.2 * Vstall)
+      out3$Vinf <- c(out3$Vinf[1])
+      out3 <- mutate(out3,
+                     qinf = 1/2 * rho * Vinf^2,
+                     Cl = W / (qinf * S),
+                     Cd = Cd0 + K * Cl^2,
+                     PA = PA(P0eng, sigma) * Ne) %>%
+        rowwise() %>%
+        do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+      #
+      ceil1$fx <- out3$ClimbRate - ceil$ClimbCeil
+      #--- New xr
+      xrold <- xr
+      xr <- xrold - (del * ceil0$fx) / (ceil1$fx - ceil0$fx)
+      #--- New Value Calculations
+      ceilr <- ceil
+      ceilr$P0eng <- xr + del
+      ceilr <- UpdateParams(ceilr)
+      out3 <- ceilr
+      #
+      out3$type <- c("Ceil")
+      out3$Ne <- c(2)
+      out3$h <- c(ceil$AltCeil)
+      out3$Clmax <- ceil$Clclean
+      out3 <- StandardAtomsphere(out3) %>%
+        mutate(Vinf = Mach * a,
+               Vstall = Vmin(rho, WS, Clmax),
+               Vsafe = 1.2 * Vstall)
+      out3$Vinf <- c(out3$Vinf[1])
+      out3 <- mutate(out3,
+                     qinf = 1/2 * rho * Vinf^2,
+                     Cl = W / (qinf * S),
+                     Cd = Cd0 + K * Cl^2,
+                     PA = PA(P0eng, sigma) * Ne) %>%
+        rowwise() %>%
+        do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+      #
+      ceilr$fx <- out3$ClimbRate - ceil$ClimbCeil
+    }
+    
     #
-    cruise0$fx <- out3$ClimbRate - cruise$ClimbCruise
-    #--- Step Value Calculations
-    cruise1 <- cruise
-    cruise1$P0eng <- xr + del
-    cruise1 <- UpdateParams(cruise1)
-    out3 <- cruise1
-    #
-    out3$type <- c("Cruise")
-    out3$Ne <- c(2)
-    out3$h <- c(cruise$AltCruise)
-    out3$Clmax <- cruise$Clclean
-    out3 <- StandardAtomsphere(out3) %>%
-      mutate(Vinf = Mach * a,
-             Vstall = Vmin(rho, WS, Clmax),
-             Vsafe = 1.2 * Vstall)
-    out3$Vinf <- c(out3$Vinf[1])
-    out3 <- mutate(out3,
-                   qinf = 1/2 * rho * Vinf^2,
-                   Cl = W / (qinf * S),
-                   Cd = Cd0 + K * Cl^2,
-                   PA = PA(P0eng, sigma) * Ne) %>%
-      rowwise() %>%
-      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
-    #
-    cruise1$fx <- out3$ClimbRate - cruise$ClimbCruise
-    #--- New xr
-    xrold <- xr
-    xr <- xrold - (del * cruise0$fx) / (cruise1$fx - cruise0$fx)
-    #--- New Value Calculations
-    cruiser <- cruise
-    cruiser$P0eng <- xr + del
-    cruiser <- UpdateParams(cruiser)
-    out3 <- cruiser
-    #
-    out3$type <- c("Cruise")
-    out3$Ne <- c(2)
-    out3$h <- c(cruise$AltCruise)
-    out3$Clmax <- cruise$Clclean
-    out3 <- StandardAtomsphere(out3) %>%
-      mutate(Vinf = Mach * a,
-             Vstall = Vmin(rho, WS, Clmax),
-             Vsafe = 1.2 * Vstall)
-    out3$Vinf <- c(out3$Vinf[1])
-    out3 <- mutate(out3,
-                   qinf = 1/2 * rho * Vinf^2,
-                   Cl = W / (qinf * S),
-                   Cd = Cd0 + K * Cl^2,
-                   PA = PA(P0eng, sigma) * Ne) %>%
-      rowwise() %>%
-      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
-    #
-    cruiser$fx <- out3$ClimbRate - cruise$ClimbCruise
-  }
-  
-  #
-  
-  ceil <- iv0
-  ceilr <- ceil %>%
-    mutate(fx = 10)
-  del <- 1
-  xr <- 180000
-  xrold <- 150000
-  
-  while((abs(ceilr$fx) > 0.001 & abs(xr - xrold) > 10) | ceilr$fx < 0) {
-    #--- Initial Value Calculations
-    ceil0 <- ceil
-    ceil0$P0eng <- xr
-    ceil0 <- UpdateParams(ceil0)
-    out3 <- ceil0
-    #
-    out3$type <- c("Ceil")
-    out3$Ne <- c(2)
-    out3$h <- c(ceil$AltCeil)
-    out3$Clmax <- ceil$Clclean
-    out3 <- StandardAtomsphere(out3) %>%
-      mutate(Vinf = Mach * a,
-             Vstall = Vmin(rho, WS, Clmax),
-             Vsafe = 1.2 * Vstall)
-    out3$Vinf <- c(out3$Vinf[1])
-    out3 <- mutate(out3,
-                   qinf = 1/2 * rho * Vinf^2,
-                   Cl = W / (qinf * S),
-                   Cd = Cd0 + K * Cl^2,
-                   PA = PA(P0eng, sigma) * Ne) %>%
-      rowwise() %>%
-      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
-    #
-    ceil0$fx <- out3$ClimbRate - ceil$ClimbCeil
-    #--- Step Value Calculations
-    ceil1 <- ceil
-    ceil1$P0eng <- xr + del
-    ceil1 <- UpdateParams(ceil1)
-    out3 <- ceil1
-    #
-    out3$type <- c("Ceil")
-    out3$Ne <- c(2)
-    out3$h <- c(ceil$AltCeil)
-    out3$Clmax <- ceil$Clclean
-    out3 <- StandardAtomsphere(out3) %>%
-      mutate(Vinf = Mach * a,
-             Vstall = Vmin(rho, WS, Clmax),
-             Vsafe = 1.2 * Vstall)
-    out3$Vinf <- c(out3$Vinf[1])
-    out3 <- mutate(out3,
-                   qinf = 1/2 * rho * Vinf^2,
-                   Cl = W / (qinf * S),
-                   Cd = Cd0 + K * Cl^2,
-                   PA = PA(P0eng, sigma) * Ne) %>%
-      rowwise() %>%
-      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
-    #
-    ceil1$fx <- out3$ClimbRate - ceil$ClimbCeil
-    #--- New xr
-    xrold <- xr
-    xr <- xrold - (del * ceil0$fx) / (ceil1$fx - ceil0$fx)
-    #--- New Value Calculations
-    ceilr <- ceil
-    ceilr$P0eng <- xr + del
-    ceilr <- UpdateParams(ceilr)
-    out3 <- ceilr
-    #
-    out3$type <- c("Ceil")
-    out3$Ne <- c(2)
-    out3$h <- c(ceil$AltCeil)
-    out3$Clmax <- ceil$Clclean
-    out3 <- StandardAtomsphere(out3) %>%
-      mutate(Vinf = Mach * a,
-             Vstall = Vmin(rho, WS, Clmax),
-             Vsafe = 1.2 * Vstall)
-    out3$Vinf <- c(out3$Vinf[1])
-    out3 <- mutate(out3,
-                   qinf = 1/2 * rho * Vinf^2,
-                   Cl = W / (qinf * S),
-                   Cd = Cd0 + K * Cl^2,
-                   PA = PA(P0eng, sigma) * Ne) %>%
-      rowwise() %>%
-      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
-    #
-    ceilr$fx <- out3$ClimbRate - ceil$ClimbCeil
-  }
-  
-  #
-  
-  #--- Determine which P0eng to use
-  P0eng <- max(cruiser$P0eng, ceilr$P0eng)
-  #--- Return the new P0eng
-  iv0$P0eng <- P0eng
-  iv0 <- UpdateParams(iv0)
-  
-## Determine Clflaps / Adjust P0eng from seg 2 OEI ======================================================================
-  #--- Maximum available Clflaps
-  a = 0; b = 3
-  gr <- (sqrt(5) + 1)/2
-  c = b - (b - a) / gr
-  d = a + (b - a) /gr
-  while (abs(c - d) > 0.0001) {
-    # Test which side has the max
-    if (seg2oei(mutate(iv0, Clflaps = c))$PerGrad > 
-        seg2oei(mutate(iv0, Clflaps = d))$PerGrad)
-    {b = d} 
-    else {a = c}
+    
+    #--- Determine which P0eng to use
+    P0eng <- max(cruiser$P0eng, ceilr$P0eng)
+    #--- Return the new P0eng
+    iv0$P0eng <- P0eng
+    iv0 <- UpdateParams(iv0)
+    
+  ## Determine Clflaps / Adjust P0eng from seg 2 OEI ======================================================================
+    #--- Maximum available Clflaps
+    a = 0; b = 3
+    gr <- (sqrt(5) + 1)/2
     c = b - (b - a) / gr
     d = a + (b - a) /gr
-  }
-  Clflapspeak <- (c + d) / 2
-  
-  # Determine if there is a turning point before flaps = hls
-  if (iv0$Clhls > Clflapspeak) {
-    hlsclimb <- seg2oei(mutate(iv0, Clflaps = Clflapspeak))$PerGrad
-  } else {
-    hlsclimb <- seg2oei(mutate(iv0, Clflaps = Clhls))$PerGrad
-  }
-  
-  #--- Determine if additional power will be required
-  if (hlsclimb < iv0$PerGrad2Seg) {
-    # Increase P0eng based on Clflaps = Clhls
-    pg <- mutate(iv0, Clflaps = Clhls)
-    fx <- 10
-    xr <- pg$P0eng
-    xrold <- 100000
-    del <- 1
+    while (abs(c - d) > 0.0001) {
+      # Test which side has the max
+      if (seg2oei(mutate(iv0, Clflaps = c))$PerGrad > 
+          seg2oei(mutate(iv0, Clflaps = d))$PerGrad)
+      {b = d} 
+      else {a = c}
+      c = b - (b - a) / gr
+      d = a + (b - a) /gr
+    }
+    Clflapspeak <- (c + d) / 2
     
-    while ((abs(fx) > 0.001 & abs(xr - xrold) > 10) | fx < 0) {
-      # Initial Value Calcs
-      pg0 <- mutate(pg, P0eng = xr)
-      pg0 <- pg$PerGrad2Seg - seg2oei(pg0)$PerGrad
-      # Step Value Calcs
-      pg1 <- mutate(pg, P0eng = xr + del)
-      pg1 <- pg$PerGrad2Seg -seg2oei(pg1)$PerGrad
-      # New xr
-      xrold <- xr
-      xr <- xrold - (del * pg0) / (pg1 - pg0)
-      # New Value Calcs
-      pgr <- mutate(pg, P0eng = xr) #<--- I've noticed this calc is repeated twice per loop!!
-      fx <- pg$PerGrad2Seg -seg2oei(pgr)$PerGrad
+    # Determine if there is a turning point before flaps = hls
+    if (iv0$Clhls > Clflapspeak) {
+      hlsclimb <- seg2oei(mutate(iv0, Clflaps = Clflapspeak))$PerGrad
+    } else {
+      hlsclimb <- seg2oei(mutate(iv0, Clflaps = Clhls))$PerGrad
     }
     
-    #--- Return the new P0eng
-    iv0$Clflaps <- pg$Clflaps
-    iv0$P0eng <- xr
-    iv0 <- UpdateParams(iv0)
-  } else {
-    # Increase Clflaps until just enough
-    pg <- mutate(iv0)
-    fx <- 10
-    xr <- 0.1
-    xrold <- 0
-    del <- 0.001
-    
-    while ((abs(fx) > 0.001 & abs(xr - xrold) > 0.0001) | fx < 0) {
-      # Initial Value Calcs
-      pg0 <- mutate(pg, Clflaps = xr)
-      pg0 <- pg$PerGrad2Seg - seg2oei(pg0)$PerGrad
-      # Step Value Calcs
-      pg1 <- mutate(pg, Clflaps = xr + del)
-      pg1 <- pg$PerGrad2Seg -seg2oei(pg1)$PerGrad
-      # New xr
-      xrold <- xr
-      xr <- xrold - (del * pg0) / (pg1 - pg0)
-      if (xr <= 0) {
-        xr = 0; break
+    #--- Determine if additional power will be required
+    if (hlsclimb < iv0$PerGrad2Seg) {
+      # Increase P0eng based on Clflaps = Clhls
+      pg <- mutate(iv0, Clflaps = Clhls)
+      fx <- 10
+      xr <- pg$P0eng
+      xrold <- 100000
+      del <- 1
+      
+      while ((abs(fx) > 0.001 & abs(xr - xrold) > 10) | fx < 0) {
+        # Initial Value Calcs
+        pg0 <- mutate(pg, P0eng = xr)
+        pg0 <- pg$PerGrad2Seg - seg2oei(pg0)$PerGrad
+        # Step Value Calcs
+        pg1 <- mutate(pg, P0eng = xr + del)
+        pg1 <- pg$PerGrad2Seg -seg2oei(pg1)$PerGrad
+        # New xr
+        xrold <- xr
+        xr <- xrold - (del * pg0) / (pg1 - pg0)
+        # New Value Calcs
+        pgr <- mutate(pg, P0eng = xr) #<--- I've noticed this calc is repeated twice per loop!!
+        fx <- pg$PerGrad2Seg -seg2oei(pgr)$PerGrad
       }
-      # New Value Calcs
-      pgr <- mutate(pg, Clflaps = xr) #<--- I've noticed this calc is repeated twice per loop!!
-      fx <- pg$PerGrad2Seg -seg2oei(pgr)$PerGrad
+      
+      #--- Return the new P0eng
+      iv0$Clflaps <- pg$Clflaps
+      iv0$P0eng <- xr
+      iv0 <- UpdateParams(iv0)
+    } else {
+      # Increase Clflaps until just enough
+      pg <- mutate(iv0)
+      fx <- 10
+      xr <- 0.1
+      xrold <- 0
+      del <- 0.001
+      
+      while ((abs(fx) > 0.001 & abs(xr - xrold) > 0.0001) | fx < 0) {
+        # Initial Value Calcs
+        pg0 <- mutate(pg, Clflaps = xr)
+        pg0 <- pg$PerGrad2Seg - seg2oei(pg0)$PerGrad
+        # Step Value Calcs
+        pg1 <- mutate(pg, Clflaps = xr + del)
+        pg1 <- pg$PerGrad2Seg -seg2oei(pg1)$PerGrad
+        # New xr
+        xrold <- xr
+        xr <- xrold - (del * pg0) / (pg1 - pg0)
+        if (xr <= 0) {
+          xr = 0; break
+        }
+        # New Value Calcs
+        pgr <- mutate(pg, Clflaps = xr) #<--- I've noticed this calc is repeated twice per loop!!
+        fx <- pg$PerGrad2Seg -seg2oei(pgr)$PerGrad
+      }
+      
+      #--- Return the new P0eng
+      iv0$Clflaps <- xr
+      iv0 <- UpdateParams(iv0)
+      
     }
-    
-    #--- Return the new P0eng
-    iv0$Clflaps <- xr
-    iv0 <- UpdateParams(iv0)
-    
-  }
-
-## Adjust P0eng from Stakeoff ======================================================================
-  #--- Test if more power is actually needed
-  #   Use an 8% margin to account for BFL
-  resolution <- 10
-  currentto <- normto(iv0) * 1.08
   
-  if (currentto > iv0$Srun) {
+  ## Adjust P0eng from Stakeoff ======================================================================
+    #--- Test if more power is actually needed
+    #   Use an 8% margin to account for BFL
+    resolution <- 10
+    currentto <- normto(iv0) * 1.08
     
-  }
+    if (currentto > iv0$Srun) {
+      takeoff <- iv0
+      takeoffr <- takeoff %>%
+        mutate(fx = 10)
+      del = 1
+      xr <- 180000
+      xrold <- 150000
+      
+      while((abs(takeoffr$fx) > 0.01 & abs(xr - xrold) > 10) | takeoffr$fx < 0) {
+        #--- Initial Value Calculations
+        takeoff0 <- takeoff
+        takeoff0$P0eng <- xr
+        takeoff0 <- UpdateParams(takeoff0)
+        takeoff0$fx <- takeoff0$Srun -  normto(takeoff0) * 1.08
+        #--- Step Value Calculations
+        takeoff1 <- takeoff
+        takeoff1$P0eng <- xr + del
+        takeoff1 <- UpdateParams(takeoff1)
+        takeoff1$fx <- takeoff1$Srun -  normto(takeoff1) * 1.08
+        #--- New xr value
+        xrold <- xr
+        xr <- xrold - (del * takeoff0$fx) / (takeoff1$fx - takeoff0$fx)
+        #--- New Value Calculations
+        takeoffr <- takeoff
+        takeoffr$P0eng <- xr
+        takeoffr <- UpdateParams(takeoffr)
+        takeoffr$fx <- takeoffr$Srun -  normto(takeoffr) * 1.08
+      }
+      
+      #--- Double check xr is larger then apply it
+      if (xr > iv0$P0eng) {
+        iv0$P0eng = xr
+        iv0 <- UpdateParams(iv0)
+      }
+    }
   
+  # End of iterations for AR specifications == AR weights
+  }
   
   ## Estimate Cd0 from Swet ==========
+
+  # End of rowwise for loops
 }
 
 
