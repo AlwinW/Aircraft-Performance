@@ -143,7 +143,7 @@ for (i in 1:nrow(iterationvals))  {
     #--- New xr
     xrold <- xr
     xr <- xrold - (del * AR0$fx) / (AR1$fx - AR0$fx)
-    #--- Step Value Calculations
+    #--- New Value Calculations
     ARr <- AR
     ARr$AR <- xr + del
     ARr <- UpdateParams(ARr)
@@ -154,6 +154,7 @@ for (i in 1:nrow(iterationvals))  {
   }
   
   iv0$AR <- xr
+  iv0 <- UpdateParams(iv0)
   
   
 ## Determine Clhls from Vapp ======================================================================
@@ -168,17 +169,193 @@ for (i in 1:nrow(iterationvals))  {
   if (Clhls$xr < 0) Clhls$xr = 0
   #--- Return the result
   iv0$Clhls <- xr
+  iv0 <- UpdateParams(iv0)
   
 ## Determine AR from Sland ======================================================================
   # Usually always met lol
   
-## Determine Clflaps from Cruise and Ceiling Climb ======================================================================
-  Cruise <- iv0
+## Determine P0end from Cruise and Ceiling Climb ======================================================================
+  cruise <- iv0
+  cruiser <- cruise %>%
+    mutate(fx = 10)
+  del <- 1
+  xr <- 180000
+  xrold <- 150000
   
+  while((abs(cruiser$fx) > 0.001 & abs(xr - xrold) > 10) | cruiser$fx < 0) {
+    #--- Initial Value Calculations
+    cruise0 <- cruise
+    cruise0$P0eng <- xr
+    cruise0 <- UpdateParams(cruise0)
+    out3 <- cruise0
+    #
+    out3$type <- c("Cruise")
+    out3$Ne <- c(2)
+    out3$h <- c(cruise$AltCruise)
+    out3$Clmax <- cruise$Clclean
+    out3 <- StandardAtomsphere(out3) %>%
+      mutate(Vinf = Mach * a,
+             Vstall = Vmin(rho, WS, Clmax),
+             Vsafe = 1.2 * Vstall)
+    out3$Vinf <- c(out3$Vinf[1])
+    out3 <- mutate(out3,
+                   qinf = 1/2 * rho * Vinf^2,
+                   Cl = W / (qinf * S),
+                   Cd = Cd0 + K * Cl^2,
+                   PA = PA(P0eng, sigma) * Ne) %>%
+      rowwise() %>%
+      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+    #
+    cruise0$fx <- out3$ClimbRate - cruise$ClimbCruise
+    #--- Step Value Calculations
+    cruise1 <- cruise
+    cruise1$P0eng <- xr + del
+    cruise1 <- UpdateParams(cruise1)
+    out3 <- cruise1
+    #
+    out3$type <- c("Cruise")
+    out3$Ne <- c(2)
+    out3$h <- c(cruise$AltCruise)
+    out3$Clmax <- cruise$Clclean
+    out3 <- StandardAtomsphere(out3) %>%
+      mutate(Vinf = Mach * a,
+             Vstall = Vmin(rho, WS, Clmax),
+             Vsafe = 1.2 * Vstall)
+    out3$Vinf <- c(out3$Vinf[1])
+    out3 <- mutate(out3,
+                   qinf = 1/2 * rho * Vinf^2,
+                   Cl = W / (qinf * S),
+                   Cd = Cd0 + K * Cl^2,
+                   PA = PA(P0eng, sigma) * Ne) %>%
+      rowwise() %>%
+      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+    #
+    cruise1$fx <- out3$ClimbRate - cruise$ClimbCruise
+    #--- New xr
+    xrold <- xr
+    xr <- xrold - (del * cruise0$fx) / (cruise1$fx - cruise0$fx)
+    #--- New Value Calculations
+    cruiser <- cruise
+    cruiser$P0eng <- xr + del
+    cruiser <- UpdateParams(cruiser)
+    out3 <- cruiser
+    #
+    out3$type <- c("Cruise")
+    out3$Ne <- c(2)
+    out3$h <- c(cruise$AltCruise)
+    out3$Clmax <- cruise$Clclean
+    out3 <- StandardAtomsphere(out3) %>%
+      mutate(Vinf = Mach * a,
+             Vstall = Vmin(rho, WS, Clmax),
+             Vsafe = 1.2 * Vstall)
+    out3$Vinf <- c(out3$Vinf[1])
+    out3 <- mutate(out3,
+                   qinf = 1/2 * rho * Vinf^2,
+                   Cl = W / (qinf * S),
+                   Cd = Cd0 + K * Cl^2,
+                   PA = PA(P0eng, sigma) * Ne) %>%
+      rowwise() %>%
+      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+    #
+    cruiser$fx <- out3$ClimbRate - cruise$ClimbCruise
+  }
   
+  #
   
+  ceil <- iv0
+  ceilr <- ceil %>%
+    mutate(fx = 10)
+  del <- 1
+  xr <- 180000
+  xrold <- 150000
   
+  while((abs(ceilr$fx) > 0.001 & abs(xr - xrold) > 10) | ceilr$fx < 0) {
+    #--- Initial Value Calculations
+    ceil0 <- ceil
+    ceil0$P0eng <- xr
+    ceil0 <- UpdateParams(ceil0)
+    out3 <- ceil0
+    #
+    out3$type <- c("Ceil")
+    out3$Ne <- c(2)
+    out3$h <- c(ceil$AltCeil)
+    out3$Clmax <- ceil$Clclean
+    out3 <- StandardAtomsphere(out3) %>%
+      mutate(Vinf = Mach * a,
+             Vstall = Vmin(rho, WS, Clmax),
+             Vsafe = 1.2 * Vstall)
+    out3$Vinf <- c(out3$Vinf[1])
+    out3 <- mutate(out3,
+                   qinf = 1/2 * rho * Vinf^2,
+                   Cl = W / (qinf * S),
+                   Cd = Cd0 + K * Cl^2,
+                   PA = PA(P0eng, sigma) * Ne) %>%
+      rowwise() %>%
+      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+    #
+    ceil0$fx <- out3$ClimbRate - ceil$ClimbCeil
+    #--- Step Value Calculations
+    ceil1 <- ceil
+    ceil1$P0eng <- xr + del
+    ceil1 <- UpdateParams(ceil1)
+    out3 <- ceil1
+    #
+    out3$type <- c("Ceil")
+    out3$Ne <- c(2)
+    out3$h <- c(ceil$AltCeil)
+    out3$Clmax <- ceil$Clclean
+    out3 <- StandardAtomsphere(out3) %>%
+      mutate(Vinf = Mach * a,
+             Vstall = Vmin(rho, WS, Clmax),
+             Vsafe = 1.2 * Vstall)
+    out3$Vinf <- c(out3$Vinf[1])
+    out3 <- mutate(out3,
+                   qinf = 1/2 * rho * Vinf^2,
+                   Cl = W / (qinf * S),
+                   Cd = Cd0 + K * Cl^2,
+                   PA = PA(P0eng, sigma) * Ne) %>%
+      rowwise() %>%
+      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+    #
+    ceil1$fx <- out3$ClimbRate - ceil$ClimbCeil
+    #--- New xr
+    xrold <- xr
+    xr <- xrold - (del * ceil0$fx) / (ceil1$fx - ceil0$fx)
+    #--- New Value Calculations
+    ceilr <- ceil
+    ceilr$P0eng <- xr + del
+    ceilr <- UpdateParams(ceilr)
+    out3 <- ceilr
+    #
+    out3$type <- c("Ceil")
+    out3$Ne <- c(2)
+    out3$h <- c(ceil$AltCeil)
+    out3$Clmax <- ceil$Clclean
+    out3 <- StandardAtomsphere(out3) %>%
+      mutate(Vinf = Mach * a,
+             Vstall = Vmin(rho, WS, Clmax),
+             Vsafe = 1.2 * Vstall)
+    out3$Vinf <- c(out3$Vinf[1])
+    out3 <- mutate(out3,
+                   qinf = 1/2 * rho * Vinf^2,
+                   Cl = W / (qinf * S),
+                   Cd = Cd0 + K * Cl^2,
+                   PA = PA(P0eng, sigma) * Ne) %>%
+      rowwise() %>%
+      do(data.frame(., ClimbRatesFunction(.$PA, .$Cd0, .$rho, .$Vinf, .$S, .$K, .$W)))
+    #
+    ceilr$fx <- out3$ClimbRate - ceil$ClimbCeil
+  }
   
+  #
+  
+  #--- Determine which P0eng to use
+  P0eng <- max(cruiser$P0eng, ceilr$P0eng)
+  #--- Return the new P0eng
+  iv0$P0eng <- P0eng
+  iv0 <- UpdateParams(iv0)
+  
+## Determine Clflaps ======================================================================
   
   #--- Determine the various climb rates required
   out3 <- iv0
