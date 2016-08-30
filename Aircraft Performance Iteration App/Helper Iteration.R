@@ -196,6 +196,10 @@ iterationvals  <- data.frame(iterationvals) %>%
   UpdateParams(.)
 
 ## For Loop ======================================================================
+
+IterationOut <- list()
+pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
+
 for (i in 1:nrow(iterationvals))  {
   
   iv0 <- iterationvals[i,]
@@ -578,7 +582,7 @@ for (i in 1:nrow(iterationvals))  {
   # End of iterations for AR specifications == AR weights
   }
   
-  summary <- suppressWarnings(MainIterationFunction(iv0, oneinput = TRUE))
+  summary <- suppressWarnings(MainIterationFunction(iv0, out = "Iteration", oneinput = TRUE))
   ## Estimate Cd0 from Swet ======================================================================
   Sref <- iv0$S
   Swet <- 66 + Sref * 2
@@ -590,8 +594,23 @@ for (i in 1:nrow(iterationvals))  {
                               Under = NA,
                               Over = NA))
 
+  ## Return the Result ======================================================================
+  IterationOut[[i]] <- summary
+  setTxtProgressBar(pb, i)
+  
   # End of rowwise for loops
 }
 
-
+IterationOutLong <-  melt(IterationOut,
+                            id.vars = c("Description", "Specification",
+                                        "Minimise", "Under", "Over"),
+                            variable.name = "key",
+                            value.name = "Iteration") %>%
+  select(-key, -Minimise, -Under, -Over) %>%
+  unite(Description, Description, L1, sep = "._")%>%
+  gather(name, value, -Description) %>%
+  separate(Description, c("Description", "ID"), sep="\\._") %>%
+  mutate(ID = as.integer(ID)) %>%
+  spread(Description, value) %>%
+  arrange(ID, name)
 
