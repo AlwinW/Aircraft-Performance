@@ -200,14 +200,14 @@ for (i in 1:nrow(iterationvals))  {
   
   iv0 <- iterationvals[i,]
   
-  AR <- 15
-  ARold <- 10
+  itAR <- 15
+  itARold <- 10
   
-  while (abs(AR - ARold) > 0.0001) {
+  while (abs(itAR - itARold) > 0.0001) {
     # Store the AR from the previous iteration as ARold
     # As requirements are changed in iv0, the weight fraction will also change
     # Thus, keep on iterating until AR no longer changes.
-    ARold <- AR
+    itARold <- itAR
     
 ## Determine AR from Empty Weight ======================================================================
     AR <- iv0
@@ -249,7 +249,7 @@ for (i in 1:nrow(iterationvals))  {
     
     iv0$AR <- xr
     iv0 <- UpdateParams(iv0)
-    
+    itAR <- xr
     
   ## Determine Clhls from Vapp ======================================================================
     #--- Initialise the while loop
@@ -578,7 +578,17 @@ for (i in 1:nrow(iterationvals))  {
   # End of iterations for AR specifications == AR weights
   }
   
-  ## Estimate Cd0 from Swet ==========
+  summary <- suppressWarnings(MainIterationFunction(iv0, oneinput = TRUE))
+  ## Estimate Cd0 from Swet ======================================================================
+  Sref <- iv0$S
+  Swet <- 66 + Sref * 2
+  summary <- rbind(summary,
+                   data.frame(Description = "SrefSwet",
+                              Iteration = Swet/Sref,
+                              Specification = NA,
+                              Minimise = NA,
+                              Under = NA,
+                              Over = NA))
 
   # End of rowwise for loops
 }
