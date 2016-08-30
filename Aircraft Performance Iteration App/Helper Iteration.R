@@ -127,6 +127,155 @@ for (i in 1:nrow(iterationvals))  {
   #--- Return the result
   iv0$Clhls <- xr
   
+## Determine AR from Sland ======================================================================
+  AR <- iv0
+  AR$fr <- 10
+  del <- 0.1
+  xr <- 20
+  resolution <- 10
+  
+  while (abs(fr) > 0.01 | fr < 0) {
+    #--- Initial Value 0
+    AirDistLD <- AR
+    AirDistLD$AR <- xr
+    AirDistLD <- UpdateParams(AirDistLD)
+    out4 <- AR ## NOTE: Delete this from below!
+    out4$AR <- xr
+    out4 <- UpdateParams(out4)
+    #--- Initial Value Calculations
+    AirDistLD$type <- "All Engines"
+    AirDistLD$Ne <- 2
+    AirDistLD <- AirDistLD %>%
+      mutate(h = 50*0.3048) %>%
+      StandardAtomsphere(.) %>%
+      mutate(
+        Clmax = Clclean + Clhls,
+        Vstall = Vmin(rho, WS, Clmax),
+        Vapp = 1.3* Vstall,
+        qinf = 1/2 * rho * Vapp^2,
+        gamma = max(-3, ClimbRatesFunction(0.01*P0, Cd0G, rho, Vapp, S, K, W)[[1]]),
+        L = W * cos(gamma * pi / 180),
+        Cl = L / (qinf * S),
+        Cd = Cd0G + K * Cl^2,
+        D = qinf * S * Cd,
+        TR = D - W * sin(gamma * pi / 180),
+        PR = TR * Vapp,
+        R = Vapp^2 / (0.2 * g),
+        SF = R * sin(gamma * pi / 180),
+        hF = R * (1 - cos(gamma * pi / 180)),
+        SA = (50*0.3048 - hF) / tan(gamma*pi/180),
+        Sair = ifelse(SA >0, SA + SF, sqrt(R^2 - (R-50*0.3048)^2)))
+    # Create a dataframe with important parameters
+    out4$type <- "Engines off"
+    out4$Ne <- 0
+    out4$mu <- as.double(filter(groundmu, names == "Dry Concrete") %>% select(brakeson))
+    out4 <- mutate(out4, h = 0) %>%
+      StandardAtomsphere(.) %>%
+      mutate(Vstall = Vmin(rho, WS, Clclean + Clhls),
+             Vtd = 1.15 * Vstall)
+    # Determine the various velocities
+    velocities <- seq(out4$Vtd[1], 1e-5, length.out = resolution * 5)
+    out4 <- out4[rep(row.names(out4),each=length(velocities)),1:length(out4)]
+    out4$Vinf <- velocities
+    # Determine the distances for landing on the ground
+    out4 <- mutate(out4, Clmax = Clclean + Clhls, Keff = Keff(K, hground, b)) %>%
+      mutate(Mach = Vinf/a, PA = PA(P0eng * Ne, sigma), TA = PA / Vinf,
+             Cl = ClG, Cd = Cd0G + Keff * Cl^2, qinf = 1/2 * rho * Vinf^2,
+             D =  qinf * S * Cd, L = qinf * S * Cl, 
+             Ff = (W - L) * mu, Fnet = TA - D - Ff, accel = Fnet / m,
+             accelrecip = 1/(2*accel), Vsq = Vinf^2) %>%
+      group_by(type) %>%
+      mutate(AreaDur = 1/2 * (accelrecip + lag(accelrecip,1)) * (Vsq - lag(Vsq,1)),
+             AreaDur = ifelse(is.na(AreaDur), 0, AreaDur),
+             Area = cumsum(AreaDur),
+             Area = ifelse(is.na(Area), 0, Area))
+    #--- Distance required to land
+    DeccelerateLand <- select(out4, Vinf, type, Area) %>%
+      spread(type, Area)
+    DeccelerateLand <- head(DeccelerateLand,1)
+    DeccelerateLand$`Air Distance` = sum(filter(AirDistLD, type == "All Engines") %>% select(Sair))
+    DeccelerateLand$`Free Roll` = as.double(out4$Vstall[1]*1.15 * 2)
+    DeccelerateLand <- mutate(DeccelerateLand, `Deccelerate-Land` = (`Engines off` + `Free Roll` + `Air Distance`) * 1.67)
+    #--- Return the result
+    AR0 <- data.frame(xr = AirDistLD$AR, fr = AR$Srun - DeccelerateLand$`Deccelerate-Land`)
+    
+    #--- Secant Value
+    AirDistLD <- AR
+    AirDistLD$AR <- xr + del
+    AirDistLD <- UpdateParams(AirDistLD)
+    out4 <- AR ## NOTE: Delete this from below!
+    out4$AR <- xr + del
+    out4 <- UpdateParams(out4)
+    
+    #--- Secant Value Calculations
+    AirDistLD$type <- "All Engines"
+    AirDistLD$Ne <- 2
+    AirDistLD <- AirDistLD %>%
+      mutate(h = 50*0.3048) %>%
+      StandardAtomsphere(.) %>%
+      mutate(
+        Clmax = Clclean + Clhls,
+        Vstall = Vmin(rho, WS, Clmax),
+        Vapp = 1.3* Vstall,
+        qinf = 1/2 * rho * Vapp^2,
+        gamma = max(-3, ClimbRatesFunction(0.01*P0, Cd0G, rho, Vapp, S, K, W)[[1]]),
+        L = W * cos(gamma * pi / 180),
+        Cl = L / (qinf * S),
+        Cd = Cd0G + K * Cl^2,
+        D = qinf * S * Cd,
+        TR = D - W * sin(gamma * pi / 180),
+        PR = TR * Vapp,
+        R = Vapp^2 / (0.2 * g),
+        SF = R * sin(gamma * pi / 180),
+        hF = R * (1 - cos(gamma * pi / 180)),
+        SA = (50*0.3048 - hF) / tan(gamma*pi/180),
+        Sair = ifelse(SA >0, SA + SF, sqrt(R^2 - (R-50*0.3048)^2)))
+    # Create a dataframe with important parameters
+    out4$type <- "Engines off"
+    out4$Ne <- 0
+    out4$mu <- as.double(filter(groundmu, names == "Dry Concrete") %>% select(brakeson))
+    out4 <- mutate(out4, h = 0) %>%
+      StandardAtomsphere(.) %>%
+      mutate(Vstall = Vmin(rho, WS, Clclean + Clhls),
+             Vtd = 1.15 * Vstall)
+    # Determine the various velocities
+    velocities <- seq(out4$Vtd[1], 1e-5, length.out = resolution * 5)
+    out4 <- out4[rep(row.names(out4),each=length(velocities)),1:length(out4)]
+    out4$Vinf <- velocities
+    # Determine the distances for landing on the ground
+    out4 <- mutate(out4, Clmax = Clclean + Clhls, Keff = Keff(K, hground, b)) %>%
+      mutate(Mach = Vinf/a, PA = PA(P0eng * Ne, sigma), TA = PA / Vinf,
+             Cl = ClG, Cd = Cd0G + Keff * Cl^2, qinf = 1/2 * rho * Vinf^2,
+             D =  qinf * S * Cd, L = qinf * S * Cl, 
+             Ff = (W - L) * mu, Fnet = TA - D - Ff, accel = Fnet / m,
+             accelrecip = 1/(2*accel), Vsq = Vinf^2) %>%
+      group_by(type) %>%
+      mutate(AreaDur = 1/2 * (accelrecip + lag(accelrecip,1)) * (Vsq - lag(Vsq,1)),
+             AreaDur = ifelse(is.na(AreaDur), 0, AreaDur),
+             Area = cumsum(AreaDur),
+             Area = ifelse(is.na(Area), 0, Area))
+    #--- Distance required to land
+    DeccelerateLand <- select(out4, Vinf, type, Area) %>%
+      spread(type, Area)
+    DeccelerateLand <- head(DeccelerateLand,1)
+    DeccelerateLand$`Air Distance` = sum(filter(AirDistLD, type == "All Engines") %>% select(Sair))
+    DeccelerateLand$`Free Roll` = as.double(out4$Vstall[1]*1.15 * 2)
+    DeccelerateLand <- mutate(DeccelerateLand, `Deccelerate-Land` = (`Engines off` + `Free Roll` + `Air Distance`) * 1.67)
+    #--- Return the result
+    AR1 <- data.frame(xr = AirDistLD$AR, fr = AR$Srun - DeccelerateLand$`Deccelerate-Land`)
+    
+    #--- Calculate the new xr
+    xr <- xr - (del * AR0$fr) / (AR1$fr - AR0$fr)
+    # RATHER than rerunning this, test the convergence using the previous fr value
+    fr <- AR0$fr
+    if (xr <=0) break
+  }
+  
+  #--- Check for reasonableness
+  if (xr <= 0 | xr >= 30) xr = 15
+  #--- Return the result
+  iv0$AR <- xr
+  
 }
 
 
