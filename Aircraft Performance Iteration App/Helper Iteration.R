@@ -105,6 +105,68 @@ seg2oei <- function(out3) {
   return(data.frame(out3))
 }
 
+#--- Calculate normal takeoff distance
+normto <- function(iv0) {
+  out2 <- iv0
+  out2$type <- c("All Engines")
+  out2$Ne <- c(2)
+  out2$mu <- c(as.double(filter(groundmu,names == "Dry Concrete") %>% select(brakesoff)))
+  # Determine the important velocities in order to generate a sequence
+  out2 <- mutate(out2, h = 0) %>%
+    StandardAtomsphere(.) %>%
+    mutate(Vstall = Vmin(rho, WS, Clclean + Clflaps),
+           Vlof = 1.1 * Vstall)
+  # Create a seqence of velocities to bind to the data frame
+  Vlof <- out2$Vlof[1]
+  velocities <- c(seq(1e-1,Vlof, length.out = resolution * 5), seq(Vlof*1.01, Vlof*1.2, length.out = resolution * 2 + 1))
+  out2 <- out2[rep(row.names(out2),each=length(velocities)),1:length(out2)]
+  rownames(out2) <- NULL
+  out2$Vinf <- velocities
+  # Determine the distance travelled in each interval
+  out2 <- mutate(out2, Clmax = Clclean + Clflaps, Keff = Keff(K, hground, b)) %>%
+    mutate(M = Vinf/a, PA = PA(P0eng, sigma) * Ne, TA = PA / Vinf,
+           Cl = ClG, Cd = Cd0G + Keff * Cl^2, qinf = 1/2 * rho * Vinf^2,
+           D =  qinf * S * Cd, L = qinf * S * Cl, 
+           Ff = (W - L) * mu, Fnet = TA - D - Ff, accel = Fnet / m,
+           accelrecip = 1/(2*accel), Vsq = Vinf^2) %>%
+    group_by(type) %>%
+    mutate(AreaDur = 1/2 * (accelrecip + lag(accelrecip,1)) * (Vsq - lag(Vsq,1)),
+           AreaDur = ifelse(is.na(AreaDur), 0, AreaDur),
+           Area = cumsum(AreaDur),
+           Area = ifelse(is.na(Area), 0, Area))
+  # Distance in the air during Take-off
+  AirDistTO <- iv0
+  rownames(AirDistTO) <- NULL
+  AirDistTO$type <- c("All Engines")
+  AirDistTO$Ne <- c(2)
+  AirDistTO <- AirDistTO %>%
+    mutate(h = 0) %>%
+    StandardAtomsphere(.) %>%
+    mutate(ClTR = Clclean + Clflaps, 
+           Vstall = Vmin(rho, WS, ClTR), VTR = Vstall * 1.15,
+           PA = PA(P0eng * Ne, sigma), TA = PA / VTR,
+           qinf = 1/2 * rho * VTR^2, Cd = Cd0 + K * ClTR^2,
+           D = qinf * S * Cd, L = qinf * S * ClTR) %>%
+    rowwise() %>%
+    mutate(
+      R = (VTR) ^ 2 / (0.2 * g),
+      # gamma = asin((TA - D) / W),
+      gamma = ClimbRatesFunction(PA, Cd0, rho, VTR, S, K, W)[[1]] * pi / 180,
+      hTR = R * (1 - cos(gamma)),
+      ST = R * (sin(gamma)),
+      SC = (Hobs - hTR) / tan(gamma),
+      Sair = ifelse(SC >0, ST + SC, sqrt(R^2 - (R-hTR)^2))
+    )%>%
+    ungroup()
+  #--- Distance required to take off with all engines operational PLUS a 1.15 safety margin
+  AccelerateLiftoff <- select(out2, Vinf, type, Area) %>%
+    spread(type, Area)
+  AccelerateLiftoff <- filter(AccelerateLiftoff, Vinf == Vlof)
+  AccelerateLiftoff$`Air Distance` = sum(filter(AirDistTO, type == "All Engines") %>% select(Sair))
+  AccelerateLiftoff <- mutate(AccelerateLiftoff, AccelerateLiftoff = (`All Engines` + `Air Distance`) * 1.15)
+  return(AccelerateLiftoff$AccelerateLiftoff)
+}
+
 ## Begin Calculations ======================================================================
 #--- Target
 target_We <- 0.40
@@ -378,7 +440,7 @@ for (i in 1:nrow(iterationvals))  {
   iv0$P0eng <- P0eng
   iv0 <- UpdateParams(iv0)
   
-## Determine Clflaps from seg 2 OEI ======================================================================
+## Determine Clflaps / Adjust P0eng from seg 2 OEI ======================================================================
   #--- Maximum available Clflaps
   a = 0; b = 3
   gr <- (sqrt(5) + 1)/2
@@ -459,10 +521,21 @@ for (i in 1:nrow(iterationvals))  {
     #--- Return the new P0eng
     iv0$Clflaps <- xr
     iv0 <- UpdateParams(iv0)
+    
+  }
+
+## Adjust P0eng from Stakeoff ======================================================================
+  #--- Test if more power is actually needed
+  #   Use an 8% margin to account for BFL
+  resolution <- 10
+  currentto <- normto(iv0) * 1.08
+  
+  if (currentto > iv0$Srun) {
+    
   }
   
-
   
+  ## Estimate Cd0 from Swet ==========
 }
 
 
