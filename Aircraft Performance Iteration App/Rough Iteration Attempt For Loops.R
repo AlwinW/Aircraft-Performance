@@ -123,23 +123,29 @@ iterationlongP0eng <-  melt(iterationP0eng,
   spread(Description, value) %>%
   arrange(ID, name)
 # 2nd Segment Percentage Gradient
-ggplot(filter(iterationlongClflaps, name == "Iteration")) +
-  geom_point(aes(x = Clflaps, y = `2nd Segment PerGrad` - 1.5, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = `2nd Segment PerGrad` - 1.5, colour = `Empty Weight`))
 # Climb rate at Ceiling
-ggplot(filter(iterationlongClflaps, name == "Iteration")) +
-  geom_point(aes(x = Clflaps, y = `Ceiling Climb Rate` - 0.508000, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = `Ceiling Climb Rate` - 0.508000, colour = `Empty Weight`))
 # Takeoff
-ggplot(filter(iterationlongClflaps, name == "Iteration")) +
-  geom_point(aes(x = Clflaps, y = `Normal Takeoff`, colour = `Empty Weight`)) +
-  geom_point(aes(x = Clflaps, y = `Estimated BFL`, colour = `Empty Weight`))
-ggplot(filter(iterationlongClflaps, name == "Iteration")) +
-  geom_point(aes(x = Clflaps, y = 1200 - pmax(`Normal Takeoff`, `Estimated BFL`), colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = `Normal Takeoff`, colour = `Empty Weight`)) +
+  geom_point(aes(x = P0eng, y = `Estimated BFL`, colour = `Empty Weight`)) +
+  ylim(-2000, 3000)
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = 1200 - pmax(`Normal Takeoff`, `Estimated BFL`), colour = `Empty Weight`)) +
+  ylim(-2000, 2000)
 # Landing
-ggplot(filter(iterationlongClflaps, name == "Iteration")) +
-  geom_point(aes(x = Clflaps, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
 # Approach Speed
-ggplot(filter(iterationlongClflaps, name == "Iteration")) +
-  geom_point(aes(x = Clflaps, y = 51.44 - `Approach Speed`, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = 51.44 - `Approach Speed`, colour = `Empty Weight`))
+# Empty Weight
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = `Empty Weight`, colour = `Empty Weight`)) + 
+  ylim(0.2,0.7)
 
 ## AR ####
 # Test for convergence / root finding
@@ -185,6 +191,10 @@ ggplot(filter(iterationlongAR, name == "Iteration")) +
 # Approach Speed
 ggplot(filter(iterationlongAR, name == "Iteration")) +
   geom_point(aes(x = AR, y = 51.44 - `Approach Speed`, colour = `Empty Weight`))
+# Empty Weight
+ggplot(filter(iterationlongAR, name == "Iteration")) +
+  geom_point(aes(x = AR, y = `Empty Weight`, colour = `Empty Weight`))
+
 
 ## Clflaps ####
 # Test for convergence / root finding
@@ -213,23 +223,27 @@ iterationlongClflaps <-  melt(iterationClflaps,
   spread(Description, value) %>%
   arrange(ID, name)
 # 2nd Segment Percentage Gradient
-ggplot(filter(iterationlongP0eng, name == "Iteration")) +
-  geom_point(aes(x = P0eng, y = `2nd Segment PerGrad` - 1.5, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = `2nd Segment PerGrad` - 1.5, colour = `Empty Weight`))
 # Climb rate at Ceiling
-ggplot(filter(iterationlongP0eng, name == "Iteration")) +
-  geom_point(aes(x = P0eng, y = `Ceiling Climb Rate` - 0.508000, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = `Ceiling Climb Rate` - 0.508000, colour = `Empty Weight`))
 # Takeoff
-ggplot(filter(iterationlongP0eng, name == "Iteration")) +
-  geom_point(aes(x = P0eng, y = `Normal Takeoff`, colour = `Empty Weight`)) +
-  geom_point(aes(x = P0eng, y = `Estimated BFL`, colour = `Empty Weight`))
-ggplot(filter(iterationlongP0eng, name == "Iteration")) +
-  geom_point(aes(x = P0eng, y = 1200 - pmax(`Normal Takeoff`, `Estimated BFL`), colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = `Normal Takeoff`, colour = `Empty Weight`)) +
+  geom_point(aes(x = Clflaps, y = `Estimated BFL`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = 1200 - pmax(`Normal Takeoff`, `Estimated BFL`), colour = `Empty Weight`))
 # Landing
-ggplot(filter(iterationlongP0eng, name == "Iteration")) +
-  geom_point(aes(x = P0eng, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
 # Approach Speed
-ggplot(filter(iterationlongP0eng, name == "Iteration")) +
-  geom_point(aes(x = P0eng, y = 51.44 - `Approach Speed`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = 51.44 - `Approach Speed`, colour = `Empty Weight`))
+# Empty Weight
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = `Empty Weight`, colour = `Empty Weight`))
+
 
 ## Clhls ####
 # Test for convergence / root finding
@@ -275,3 +289,6 @@ ggplot(filter(iterationlongClhls, name == "Iteration")) +
 # Approach Speed
 ggplot(filter(iterationlongClhls, name == "Iteration")) +
   geom_point(aes(x = Clhls, y = 51.44 - `Approach Speed`, colour = `Empty Weight`))
+# Empty Weight
+ggplot(filter(iterationlongClhls, name == "Iteration")) +
+  geom_point(aes(x = Clhls, y = `Empty Weight`, colour = `Empty Weight`))
