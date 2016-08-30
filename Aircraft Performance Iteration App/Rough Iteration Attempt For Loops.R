@@ -96,15 +96,150 @@ ggplot(filter(asdf, name == "Iteration")) +
 ggplot(data = filter(asdf, name == "Iteration")) +
   geom_point(aes(x = e, y = m, colour = `Empty Weight`)) 
 
+## power per engine ####
 # Test for convergence / root finding
-var_Clflaps = seq(0.2, 2.5, 0.1)
-iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_Clflaps)), 1:length(input_initial)]
-iterationvals$Clflaps <- rep(var_Clflaps)
-iteration <- list()
-for (i in 1:length(var_Clflaps)) {
+var_P0eng = seq(10000, 250000, 10000)
+iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_P0eng)), 1:length(input_initial)]
+iterationvals$P0eng <- rep(var_P0eng)
+iterationvals <- data.frame(UpdateParams(iterationvals))
+iterationP0eng <- list()
+pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
+for (i in 1:length(var_P0eng)) {
   iterationvals0 <- UpdateParams(iterationvals[i,])
-  iterationCl[[i]] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
+  iterationP0eng[[i]] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
+  setTxtProgressBar(pb, i)
 }
 
+iterationlongP0eng <-  melt(iterationP0eng,
+                       id.vars = c("Description", "Specification",
+                                   "Minimise", "Under", "Over"),
+                       variable.name = "key",
+                       value.name = "Iteration") %>%
+  select(-key, -Minimise, -Under, -Over) %>%
+  unite(Description, Description, L1, sep = "._")%>%
+  gather(name, value, -Description) %>%
+  separate(Description, c("Description", "ID"), sep="\\._") %>%
+  mutate(ID = as.integer(ID)) %>%
+  spread(Description, value) %>%
+  arrange(ID, name)
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = `2nd Segment PerGrad` - 1.5, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = `Ceiling Climb Rate` - 0.508000, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = 1200 - `Normal Takeoff`, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = 1200 - `Estimated BFL`, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
 
+## AR ####
+# Test for convergence / root finding
+var_AR = seq(15, 30, 1)
+iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_AR)), 1:length(input_initial)]
+iterationvals$AR <- rep(var_AR)
+iterationvals <- data.frame(UpdateParams(iterationvals))
+iterationAR <- list()
+pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
+for (i in 1:length(var_AR)) {
+  iterationvals0 <- UpdateParams(iterationvals[i,])
+  iterationAR[[i]] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
+  setTxtProgressBar(pb, i)
+}
 
+iterationlongAR <-  melt(iterationAR,
+                            id.vars = c("Description", "Specification",
+                                        "Minimise", "Under", "Over"),
+                            variable.name = "key",
+                            value.name = "Iteration") %>%
+  select(-key, -Minimise, -Under, -Over) %>%
+  unite(Description, Description, L1, sep = "._")%>%
+  gather(name, value, -Description) %>%
+  separate(Description, c("Description", "ID"), sep="\\._") %>%
+  mutate(ID = as.integer(ID)) %>%
+  spread(Description, value) %>%
+  arrange(ID, name)
+ggplot(filter(iterationlongAR, name == "Iteration")) +
+  geom_point(aes(x = AR, y = `2nd Segment PerGrad` - 1.5, colour = `Empty Weight`))
+ggplot(filter(iterationlongAR, name == "Iteration")) +
+  geom_point(aes(x = AR, y = `Ceiling Climb Rate` - 0.508000, colour = `Empty Weight`))
+ggplot(filter(iterationlongAR, name == "Iteration")) +
+  geom_point(aes(x = AR, y = 1200 - `Normal Takeoff`, colour = `Empty Weight`))
+ggplot(filter(iterationlongAR, name == "Iteration")) +
+  geom_point(aes(x = AR, y = 1200 - `Estimated BFL`, colour = `Empty Weight`))
+ggplot(filter(iterationlongAR, name == "Iteration")) +
+  geom_point(aes(x = AR, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
+
+## Clflaps ####
+# Test for convergence / root finding
+var_Clflaps = seq(0.2, 1.5, 0.1)
+iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_Clflaps)), 1:length(input_initial)]
+iterationvals$Clflaps <- rep(var_Clflaps)
+iterationvals <- data.frame(UpdateParams(iterationvals))
+iterationClflaps <- list()
+pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
+for (i in 1:length(var_Clflaps)) {
+  iterationvals0 <- UpdateParams(iterationvals[i,])
+  iterationClflaps[[i]] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
+  setTxtProgressBar(pb, i)
+}
+
+iterationlongClflaps <-  melt(iterationClflaps,
+                         id.vars = c("Description", "Specification",
+                                     "Minimise", "Under", "Over"),
+                         variable.name = "key",
+                         value.name = "Iteration") %>%
+  select(-key, -Minimise, -Under, -Over) %>%
+  unite(Description, Description, L1, sep = "._")%>%
+  gather(name, value, -Description) %>%
+  separate(Description, c("Description", "ID"), sep="\\._") %>%
+  mutate(ID = as.integer(ID)) %>%
+  spread(Description, value) %>%
+  arrange(ID, name)
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = `2nd Segment PerGrad` - 1.5, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = `Ceiling Climb Rate` - 0.508000, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = 1200 - `Normal Takeoff`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = 1200 - `Estimated BFL`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
+
+## Clhls ####
+# Test for convergence / root finding
+var_Clhls = seq(0.2, 1.5, 0.1)
+iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_Clhls)), 1:length(input_initial)]
+iterationvals$Clhls <- rep(var_Clhls)
+iterationvals <- data.frame(UpdateParams(iterationvals))
+iterationClhls <- list()
+pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
+for (i in 1:length(var_Clhls)) {
+  iterationvals0 <- UpdateParams(iterationvals[i,])
+  iterationClhls[[i]] <- MainIterationFunction(iterationvals0, specifications, out = "Iteration")
+  setTxtProgressBar(pb, i)
+}
+
+iterationlongClhls <-  melt(iterationClhls,
+                              id.vars = c("Description", "Specification",
+                                          "Minimise", "Under", "Over"),
+                              variable.name = "key",
+                              value.name = "Iteration") %>%
+  select(-key, -Minimise, -Under, -Over) %>%
+  unite(Description, Description, L1, sep = "._")%>%
+  gather(name, value, -Description) %>%
+  separate(Description, c("Description", "ID"), sep="\\._") %>%
+  mutate(ID = as.integer(ID)) %>%
+  spread(Description, value) %>%
+  arrange(ID, name)
+ggplot(filter(iterationlongClhls, name == "Iteration")) +
+  geom_point(aes(x = Clhls, y = `2nd Segment PerGrad` - 1.5, colour = `Empty Weight`))
+ggplot(filter(iterationlongClhls, name == "Iteration")) +
+  geom_point(aes(x = Clhls, y = `Ceiling Climb Rate` - 0.508000, colour = `Empty Weight`))
+ggplot(filter(iterationlongClhls, name == "Iteration")) +
+  geom_point(aes(x = Clhls, y = 1200 - `Normal Takeoff`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClhls, name == "Iteration")) +
+  geom_point(aes(x = Clhls, y = 1200 - `Estimated BFL`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClhls, name == "Iteration")) +
+  geom_point(aes(x = Clhls, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
