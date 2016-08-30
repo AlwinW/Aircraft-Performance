@@ -54,12 +54,16 @@ ClimbRatesFunction <- function(P, Cd0, rho, V, S, K, W) {
 # THIS IS FOR CALCULATING SINGLE VALUES THAT WILL THEN GO INTO THE ITERATION FUNCTION
 # Do not put graphing functions here!!
 
-MainIterationFunction <- function(inputvals, specifications, resolution = 10, out = "Iteration", updateProgress = NULL) {
+MainIterationFunction <- function(inputvals, specifications, resolution = 10, out = "Iteration", 
+                                  updateProgress = NULL, oneinput = FALSE) {
   #--- Manipulate the data into a meaningful form
-  inp  <- t(specifications["Value"])
-  colnames(inp) <- t(specifications["Variable"])
-  inp <- cbind(inputvals, inp)
-  
+  if (oneinput == FALSE) {
+    inp  <- t(specifications["Value"])
+    colnames(inp) <- t(specifications["Variable"])
+    inp <- cbind(inputvals, inp)
+  } else {
+    inp <- inputvals
+  }
   #--- Initialise the summary data frame
   summary <- data.frame()
   
