@@ -117,17 +117,17 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
          "Landing Vstall * 1.3"
           ),
        Value = c(
-         filter(out1, type == "Cruise")$Vinf,
-         filter(out1, type == "Cruise")$Vinf,
-         filter(out1, type == "Cruise")$Vinf,
+         filter(out1, type == "Cruise")$Vstar,
+         filter(out1, type == "Cruise")$Vstall,
+         filter(out1, type == "Cruise")$Vsafe,
          filter(out1, type == "Cruise")$Cl,
          filter(out1, type == "Cruise")$ClCd,
          filter(out1, type == "Landing")$Vstall * 1.3
           ),
        Target = c(
-         filter(out1, type == "Cruise")$Vstar,
-         filter(out1, type == "Cruise")$Vstall,
-         filter(out1, type == "Cruise")$Vsafe,
+         filter(out1, type == "Cruise")$Vinf,
+         filter(out1, type == "Cruise")$Vinf,
+         filter(out1, type == "Cruise")$Vinf,
          filter(out1, type == "Cruise")$Clstar,
          filter(out1, type == "Cruise")$ClCdstar,
          inp$Vappmax
