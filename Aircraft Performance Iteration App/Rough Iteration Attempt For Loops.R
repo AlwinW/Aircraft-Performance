@@ -96,9 +96,9 @@ ggplot(filter(asdf, name == "Iteration")) +
 ggplot(data = filter(asdf, name == "Iteration")) +
   geom_point(aes(x = e, y = m, colour = `Empty Weight`)) 
 
-## power per engine ####
+## Power per engine ####
 # Test for convergence / root finding
-var_P0eng = seq(10000, 250000, 10000)
+var_P0eng = seq(10000, 250000, 1000)
 iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_P0eng)), 1:length(input_initial)]
 iterationvals$P0eng <- rep(var_P0eng)
 iterationvals <- data.frame(UpdateParams(iterationvals))
@@ -132,10 +132,12 @@ ggplot(filter(iterationlongP0eng, name == "Iteration")) +
   geom_point(aes(x = P0eng, y = 1200 - `Estimated BFL`, colour = `Empty Weight`))
 ggplot(filter(iterationlongP0eng, name == "Iteration")) +
   geom_point(aes(x = P0eng, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
+ggplot(filter(iterationlongP0eng, name == "Iteration")) +
+  geom_point(aes(x = P0eng, y = `Approach Speed`, colour = `Empty Weight`))
 
 ## AR ####
 # Test for convergence / root finding
-var_AR = seq(15, 30, 1)
+var_AR = seq(15, 30, 0.1)
 iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_AR)), 1:length(input_initial)]
 iterationvals$AR <- rep(var_AR)
 iterationvals <- data.frame(UpdateParams(iterationvals))
@@ -169,10 +171,12 @@ ggplot(filter(iterationlongAR, name == "Iteration")) +
   geom_point(aes(x = AR, y = 1200 - `Estimated BFL`, colour = `Empty Weight`))
 ggplot(filter(iterationlongAR, name == "Iteration")) +
   geom_point(aes(x = AR, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
+ggplot(filter(iterationlongAR, name == "Iteration")) +
+  geom_point(aes(x = AR, y = `Approach Speed`, colour = `Empty Weight`))
 
 ## Clflaps ####
 # Test for convergence / root finding
-var_Clflaps = seq(0.2, 1.5, 0.1)
+var_Clflaps = seq(0.2, 1.5, 0.01)
 iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_Clflaps)), 1:length(input_initial)]
 iterationvals$Clflaps <- rep(var_Clflaps)
 iterationvals <- data.frame(UpdateParams(iterationvals))
@@ -206,10 +210,12 @@ ggplot(filter(iterationlongClflaps, name == "Iteration")) +
   geom_point(aes(x = Clflaps, y = 1200 - `Estimated BFL`, colour = `Empty Weight`))
 ggplot(filter(iterationlongClflaps, name == "Iteration")) +
   geom_point(aes(x = Clflaps, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClflaps, name == "Iteration")) +
+  geom_point(aes(x = Clflaps, y = `Approach Speed`, colour = `Empty Weight`))
 
 ## Clhls ####
 # Test for convergence / root finding
-var_Clhls = seq(0.2, 1.5, 0.1)
+var_Clhls = seq(0.2, 1.5, 0.01)
 iterationvals <- input_initial[rep(rownames(input_initial), each =length(var_Clhls)), 1:length(input_initial)]
 iterationvals$Clhls <- rep(var_Clhls)
 iterationvals <- data.frame(UpdateParams(iterationvals))
@@ -243,3 +249,5 @@ ggplot(filter(iterationlongClhls, name == "Iteration")) +
   geom_point(aes(x = Clhls, y = 1200 - `Estimated BFL`, colour = `Empty Weight`))
 ggplot(filter(iterationlongClhls, name == "Iteration")) +
   geom_point(aes(x = Clhls, y = 1200 - `Landing Dist`, colour = `Empty Weight`))
+ggplot(filter(iterationlongClhls, name == "Iteration")) +
+  geom_point(aes(x = Clhls, y = `Approach Speed`, colour = `Empty Weight`))

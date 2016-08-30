@@ -440,17 +440,20 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     iteration,
     data.frame(
       Description = c(
-        "Landing Dist"
+        "Landing Dist",
+        "Approach Speed"
       ),
       Iteration = c(
-        DeccelerateLand$`Deccelerate-Land`
+        DeccelerateLand$`Deccelerate-Land`,
+        AirDistLD$Vapp
       ),
       Specification = c(
-        inp$Srun
+        inp$Srun,
+        inp$Vappmax
       ),
-      Minimise = c(1),
-      Under = c(1),
-      Over = c(0)
+      Minimise = c(1, 1),
+      Under = c(1, 1),
+      Over = c(0, 0)
     )
   )
   
