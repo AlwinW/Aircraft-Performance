@@ -143,13 +143,13 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
         "Landing below 100kt"
       ),
       Iteration = c(
-        filter(out1, type == "Cruise")$Vinf,
-        filter(out1, type == "Cruise")$Vinf,
+        filter(out1, type == "Cruise")$Vstar,
+        filter(out1, type == "Cruise")$Vsafe,
         filter(out1, type == "Landing")$Vstall * 1.3
       ),
       Specification = c(
-        filter(out1, type == "Cruise")$Vstar,
-        filter(out1, type == "Cruise")$Vsafe,
+        filter(out1, type == "Cruise")$Vinf,
+        filter(out1, type == "Cruise")$Vinf,
         inp$Vappmax
       ),
       Minimise = c(1, 0, 1),
