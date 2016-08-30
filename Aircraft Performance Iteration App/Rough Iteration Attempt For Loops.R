@@ -132,7 +132,8 @@ ggplot(filter(iterationlongP0eng, name == "Iteration")) +
 ggplot(filter(iterationlongP0eng, name == "Iteration")) +
   geom_point(aes(x = P0eng, y = `Normal Takeoff`, colour = `Empty Weight`)) +
   geom_point(aes(x = P0eng, y = `Estimated BFL`, colour = `Empty Weight`)) +
-  ylim(-2000, 3000)
+  geom_line(aes(x = P0eng, y = `Normal Takeoff`*1.1), colour = "red") +
+  ylim(-000, 2000)
 ggplot(filter(iterationlongP0eng, name == "Iteration")) +
   geom_point(aes(x = P0eng, y = 1200 - pmax(`Normal Takeoff`, `Estimated BFL`), colour = `Empty Weight`)) +
   ylim(-2000, 2000)

@@ -379,37 +379,89 @@ for (i in 1:nrow(iterationvals))  {
   iv0 <- UpdateParams(iv0)
   
 ## Determine Clflaps from seg 2 OEI ======================================================================
-  #--- Test if next power will be needed
-  maxflaps <- iv0
-  hlsclimb <- seg2oei(mutate(maxflaps, Clflaps = 0))$PerGrad
-  for (i in seq(0.2,maxflaps$Clhls,length.out = 20)) {
-    maxflaps$Clflaps <- i
-    hlsclimbi <- seg2oei(maxflaps)$PerGrad
-    if (hlsclimbi > hlsclimb) hlsclimb = hlsclimbi
+  #--- Maximum available Clflaps
+  a = 0; b = 3
+  gr <- (sqrt(5) + 1)/2
+  c = b - (b - a) / gr
+  d = a + (b - a) /gr
+  while (abs(c - d) > 0.0001) {
+    # Test which side has the max
+    if (seg2oei(mutate(iv0, Clflaps = c))$PerGrad > 
+        seg2oei(mutate(iv0, Clflaps = d))$PerGrad)
+    {b = d} 
+    else {a = c}
+    c = b - (b - a) / gr
+    d = a + (b - a) /gr
+  }
+  Clflapspeak <- (c + d) / 2
+  
+  # Determine if there is a turning point before flaps = hls
+  if (iv0$Clhls > Clflapspeak) {
+    hlsclimb <- seg2oei(mutate(iv0, Clflaps = Clflapspeak))$PerGrad
+  } else {
+    hlsclimb <- seg2oei(mutate(iv0, Clflaps = Clhls))$PerGrad
   }
   
-  
-  maxflaps$Clflaps <- maxflaps$Clhls
-  hlsclimb <- seg2oei(maxflaps)$PerGrad
-  
-  #--- If there is enough Clhls
-  maxflaps <- iv0
-  
-  Clflapsplot <- data.frame()
-  for (i in seq(0.2,maxflaps$Clhls,length.out = 20)) {
-    maxflaps$Clflaps <- i
-    hlsclimb <- seg2oei(maxflaps)$PerGrad
-    Clflapsplot <- rbind(Clflapsplot, data.frame(x = i, y = hlsclimb))
+  #--- Determine if additional power will be required
+  if (hlsclimb < iv0$PerGrad2Seg) {
+    # Increase P0eng based on Clflaps = Clhls
+    pg <- mutate(iv0, Clflaps = Clhls)
+    fx <- 10
+    xr <- pg$P0eng
+    xrold <- 100000
+    del <- 1
+    
+    while ((abs(fx) > 0.001 & abs(xr - xrold) > 10) | fx < 0) {
+      # Initial Value Calcs
+      pg0 <- mutate(pg, P0eng = xr)
+      pg0 <- pg$PerGrad2Seg - seg2oei(pg0)$PerGrad
+      # Step Value Calcs
+      pg1 <- mutate(pg, P0eng = xr + del)
+      pg1 <- pg$PerGrad2Seg -seg2oei(pg1)$PerGrad
+      # New xr
+      xrold <- xr
+      xr <- xrold - (del * pg0) / (pg1 - pg0)
+      # New Value Calcs
+      pgr <- mutate(pg, P0eng = xr) #<--- I've noticed this calc is repeated twice per loop!!
+      fx <- pg$PerGrad2Seg -seg2oei(pgr)$PerGrad
+    }
+    
+    #--- Return the new P0eng
+    iv0$Clflaps <- pg$Clflaps
+    iv0$P0eng <- xr
+    iv0 <- UpdateParams(iv0)
+  } else {
+    # Increase Clflaps until just enough
+    pg <- mutate(iv0)
+    fx <- 10
+    xr <- 0.1
+    xrold <- 0
+    del <- 0.001
+    
+    while ((abs(fx) > 0.001 & abs(xr - xrold) > 0.0001) | fx < 0) {
+      # Initial Value Calcs
+      pg0 <- mutate(pg, Clflaps = xr)
+      pg0 <- pg$PerGrad2Seg - seg2oei(pg0)$PerGrad
+      # Step Value Calcs
+      pg1 <- mutate(pg, Clflaps = xr + del)
+      pg1 <- pg$PerGrad2Seg -seg2oei(pg1)$PerGrad
+      # New xr
+      xrold <- xr
+      xr <- xrold - (del * pg0) / (pg1 - pg0)
+      if (xr <= 0) {
+        xr = 0; break
+      }
+      # New Value Calcs
+      pgr <- mutate(pg, Clflaps = xr) #<--- I've noticed this calc is repeated twice per loop!!
+      fx <- pg$PerGrad2Seg -seg2oei(pgr)$PerGrad
+    }
+    
+    #--- Return the new P0eng
+    iv0$Clflaps <- xr
+    iv0 <- UpdateParams(iv0)
   }
-  ggplot(Clflapsplot, aes(x=x, y=y)) + geom_point()
-  maxflaps$Clflaps <- 1.5
-  hlsclimb <- seg2oei(maxflaps)$PerGrad
-  hlsclimb
   
-  
-  #--- Determine the various climb rates required
-  out3 <- iv0
-  seg2oei(out3)
+
   
 }
 
