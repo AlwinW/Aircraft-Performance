@@ -203,6 +203,7 @@ pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
 for (i in 1:nrow(iterationvals))  {
   
   ptm <- proc.time()
+  t0 <- Sys.time()
   
   iv0 <- iterationvals[i,]
   
@@ -210,7 +211,7 @@ for (i in 1:nrow(iterationvals))  {
   itARold <- 10
   itcount <- 0
   
-  while ((abs(itAR - itARold) > 0.0001) & itcount <= 8) {
+  while ((abs(itAR - itARold) > 0.0001) & itcount <= 8 & as.double(difftime(Sys.time(), t0, units = 'secs')) < 30) {
     # Store the AR from the previous iteration as ARold
     # As requirements are changed in iv0, the weight fraction will also change
     # Thus, keep on iterating until AR no longer changes.
