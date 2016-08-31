@@ -202,16 +202,20 @@ pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
 
 for (i in 1:nrow(iterationvals))  {
   
+  ptm <- proc.time()
+  
   iv0 <- iterationvals[i,]
   
   itAR <- 15
   itARold <- 10
+  itcount <- 0
   
-  while (abs(itAR - itARold) > 0.0001) {
+  while ((abs(itAR - itARold) > 0.0001) & itcount <= 8) {
     # Store the AR from the previous iteration as ARold
     # As requirements are changed in iv0, the weight fraction will also change
     # Thus, keep on iterating until AR no longer changes.
     itARold <- itAR
+    itcount <- itcount + 1
     
 ## Determine AR from Empty Weight ======================================================================
     AR <- iv0
@@ -221,7 +225,9 @@ for (i in 1:nrow(iterationvals))  {
     xr <- 15
     xrold <- 10
     
-    while(abs(ARr$fx) > 0.001 & abs(xr - xrold) > 0.001) {
+    ARcount <- 0
+    while ((abs(ARr$fx) > 0.001 & abs(xr - xrold) > 0.001) & ARcount <=8) {
+      ARcount <- ARcount + 1
       #--- Initial Value Calculations
       AR0 <- AR
       AR0$AR <- xr
@@ -279,8 +285,10 @@ for (i in 1:nrow(iterationvals))  {
     del <- 1
     xr <- 180000
     xrold <- 150000
+    cruisecount <- 0
     
-    while((abs(cruiser$fx) > 0.001 & abs(xr - xrold) > 10) | cruiser$fx < 0) {
+    while(((abs(cruiser$fx) > 0.001 & abs(xr - xrold) > 10) | cruiser$fx < 0) & cruisecount <=8) {
+      cruisecount <- cruisecount + 1
       #--- Initial Value Calculations
       cruise0 <- cruise
       cruise0$P0eng <- xr
@@ -366,8 +374,10 @@ for (i in 1:nrow(iterationvals))  {
     del <- 1
     xr <- 180000
     xrold <- 150000
+    ceilcount <- 0
     
-    while((abs(ceilr$fx) > 0.001 & abs(xr - xrold) > 10) | ceilr$fx < 0) {
+    while (((abs(ceilr$fx) > 0.001 & abs(xr - xrold) > 10) | ceilr$fx < 0) & ceilcount <= 8) {
+      ceilcount <- ceilcount + 1
       #--- Initial Value Calculations
       ceil0 <- ceil
       ceil0$P0eng <- xr
@@ -596,8 +606,12 @@ for (i in 1:nrow(iterationvals))  {
 
   ## Return the Result ======================================================================
   IterationOut[[i]] <- summary
-  setTxtProgressBar(pb, i)
   
+  ## Display result to the console ======================================================================
+  print(paste0("i = ", i))
+  print(proc.time() - ptm)
+  
+  setTxtProgressBar(pb, i)
   # End of rowwise for loops
 }
 
