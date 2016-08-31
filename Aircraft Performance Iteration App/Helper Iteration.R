@@ -9,7 +9,7 @@
 input_initial <- data.frame(
   S = 24.5, b = 22.1359, 
   AR = 20, e = 0.8, K = 0.01989, Cd0 = 0.015,
-  Clclean = 1.5, Clflaps = 1.2, Clhls = 1.5,
+  Clclean = 1.8, Clflaps = 1.2, Clhls = 1.5,
   m = 6500, W = 63742, WS = 2601.72,
   P0eng = 180000, P0 = 360000, Etatotal = 0.80, alt_s = 0, 
   ClG = 0.25, Cd0G = 0.025, hground = 2.5
@@ -169,7 +169,7 @@ normto <- function(iv0) {
 
 ## Begin Calculations ======================================================================
 #--- Target
-target_We <- 0.40
+target_We <- 0.45
 #--- Manipulate the data into a meaningful form
 inp  <- t(specifications["Value"])
 colnames(inp) <- t(specifications["Variable"])
@@ -180,6 +180,11 @@ var_m <- seq(5000, 7000, 250)
 var_e <- seq(0.8, 0.95, 0.05)
 var_Cd0 <-  seq(0.015, 0.020, 0.001)
 var_WS <-  seq(1200, 2200, 200)
+
+  # var_m = 5000
+  # var_e = 0.85
+  # var_Cd0 = 0.02
+  # var_WS = c(1200, 1400)
 
 #--- Apply the variables and update the dataframe
 iterationvals <- inp %>%
@@ -256,7 +261,11 @@ for (i in 1:nrow(iterationvals))  {
         filter(Description == "Empty Weight") %>%
         select(Iteration) %>%
         mutate(xr = xr + del, fx = Iteration - target_We)
+      #--- Test to see if xr possible!!!
+      if (xr < 0) break
     }
+    
+    if (xr < 0) next
     
     iv0$AR <- xr
     iv0 <- UpdateParams(iv0)
