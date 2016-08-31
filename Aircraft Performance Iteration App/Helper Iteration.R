@@ -176,10 +176,10 @@ colnames(inp) <- t(specifications["Variable"])
 inp <- cbind(inputvals, inp)
 
 #--- Variables to be applied
-var_m <- seq(6000, 6500, 500)
-var_e <- seq(0.8, 0.85, 0.05)
-var_Cd0 <-  seq(0.015, 0.020, 0.005)
-var_WS <-  seq(1800, 2200, 200)
+var_m <- seq(5000, 7000, 250)
+var_e <- seq(0.8, 0.95, 0.05)
+var_Cd0 <-  seq(0.015, 0.020, 0.001)
+var_WS <-  seq(1200, 2200, 200)
 
 #--- Apply the variables and update the dataframe
 iterationvals <- inp %>%
@@ -608,8 +608,9 @@ for (i in 1:nrow(iterationvals))  {
   IterationOut[[i]] <- summary
   
   ## Display result to the console ======================================================================
-  print(paste0("i = ", i))
+  cat(paste0("\ni = ", i, "\n"))
   print(proc.time() - ptm)
+  cat("\n")
   
   setTxtProgressBar(pb, i)
   # End of rowwise for loops
