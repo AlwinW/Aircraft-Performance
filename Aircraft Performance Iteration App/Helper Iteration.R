@@ -176,10 +176,10 @@ colnames(inp) <- t(specifications["Variable"])
 inp <- cbind(inputvals, inp)
 
 #--- Variables to be applied
-var_m <- seq(5000, 7000, 250)
-var_e <- seq(0.8, 0.95, 0.05)
-var_Cd0 <-  seq(0.015, 0.020, 0.001)
-var_WS <-  seq(1200, 2200, 200)
+var_m <- seq(6600, 6800, 100)
+var_e <- seq(0.85, 0.95, 0.05)
+var_Cd0 <-  seq(0.018, 0.020, 0.001)
+var_WS <-  seq(2100, 2300, 100)
 
   # var_m = 5000
   # var_e = 0.85
@@ -205,7 +205,7 @@ iterationvals  <- data.frame(iterationvals) %>%
 IterationOut <- list()
 pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
 
-for (i in 1124:nrow(iterationvals))  {
+for (i in 1:nrow(iterationvals))  {
   
   ptm <- proc.time()
   t0 <- Sys.time()

@@ -1,6 +1,7 @@
 ## Initialisation ======================================================================
 #--- Load required libraries
 library(shiny)
+library(MASS)
 library(lazyeval)
 library(tidyr)
 library(dplyr)
