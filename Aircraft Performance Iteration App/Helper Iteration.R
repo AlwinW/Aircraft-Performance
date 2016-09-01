@@ -585,12 +585,15 @@ for (i in 1:nrow(iterationvals))  {
         #--- New xr value
         xrold <- xr
         xr <- xrold - (del * takeoff0$fx) / (takeoff1$fx - takeoff0$fx)
+        if (xr < 0) break
         #--- New Value Calculations
         takeoffr <- takeoff
         takeoffr$P0eng <- xr
         takeoffr <- UpdateParams(takeoffr)
         takeoffr$fx <- takeoffr$Srun -  normto(takeoffr) * 1.08
       }
+      
+      if (xr < 0) next
       
       #--- Double check xr is larger then apply it
       if (xr > iv0$P0eng) {
@@ -621,6 +624,7 @@ for (i in 1:nrow(iterationvals))  {
   cat(paste0("\ni = ", i, "\n"))
   print(proc.time() - ptm)
   cat("\n")
+  print(summary)
   
   setTxtProgressBar(pb, i)
   # End of rowwise for loops
