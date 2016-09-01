@@ -41,7 +41,26 @@ colnames(cardeaths) &lt;- c("DriversKilled", "DistanceDriven", "PriceofGas",
 parcoord(state.x77[, c(7, 4, 6, 2, 5, 3)], var.label=TRUE)
 
 
-testplot <- filter(IterationOutLong, name == "Iteration", AR < 30) %>% 
+testplot <- filter(IterationOutLong, name == "Iteration", AR < 30, Clhls < 1, `Empty Weight` > 0.35) %>% 
   select(m, S, WS, AR, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, Clflaps, Clhls, `Empty Weight`) %>%
-  mutate(AR = -AR, P0eng = -P0eng)
+  mutate(AR = -AR, P0eng = -P0eng, WS = -WS)
+parcoordlabel(testplot, col=rainbow(length(testplot[,1])))
+
+
+testplot <- filter(IterationOutLong, name == "Iteration", AR < 30, Clhls < 1, `Empty Weight` > 0.35, Cd0 > 0.015) %>% 
+  mutate(b = sqrt(S/AR))%>% 
+  select(m, S, WS, Clhls, AR, b, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`) %>%
+  mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet)
+parcoordlabel(testplot, col=rainbow(length(testplot[,1])))
+
+#--- Cd0 = 0.02
+testplot <- filter(IterationOutLong, name == "Iteration", AR < 30, Cd0 > 0.019) %>% 
+  select(Cd0,m, S, WS, Clhls, AR, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`) %>%
+  mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet)
+parcoordlabel(testplot, col=rainbow(length(testplot[,1])))
+
+#--- Cd0 = 0.0175
+testplot <- filter(IterationOutLong, name == "Iteration", AR < 30, Clhls < 0.6, `Empty Weight` > 0.35, Cd0 > 0.015) %>% 
+  select(m, S, WS, Clhls, AR, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet) %>%
+  mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet)
 parcoordlabel(testplot, col=rainbow(length(testplot[,1])))

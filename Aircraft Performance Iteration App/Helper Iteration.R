@@ -205,7 +205,7 @@ iterationvals  <- data.frame(iterationvals) %>%
 IterationOut <- list()
 pb <- txtProgressBar(min=0, max = nrow(iterationvals), style = 3)
 
-for (i in 1:nrow(iterationvals))  {
+for (i in 1124:nrow(iterationvals))  {
   
   ptm <- proc.time()
   t0 <- Sys.time()
