@@ -181,10 +181,10 @@ var_e <- seq(0.85, 0.95, 0.05)
 var_Cd0 <-  seq(0.018, 0.020, 0.001)
 var_WS <-  seq(2100, 2300, 100)
 
-  # var_m = 5000
-  # var_e = 0.85
-  # var_Cd0 = 0.02
-  # var_WS = c(1200, 1400)
+  var_m = seq(6400, 6600, 50)
+  var_e = 0.80
+  var_Cd0 = seq(0.015,0.018,0.001)
+  var_WS = seq(2400, 2700, 100)
 
 #--- Apply the variables and update the dataframe
 iterationvals <- inp %>%

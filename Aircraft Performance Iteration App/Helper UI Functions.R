@@ -12,16 +12,16 @@ input_initial <- data.frame(
   K = 0.01989,
   
   Cd0 = 0.015,
-  Clclean = 1.5,
-  Clflaps = 1.2,
-  Clhls = 1.5,
+  Clclean = 1.8,
+  Clflaps = 0.9169118,
+  Clhls = 0.9169118,
   
   m = 6500,
-  W = 63742,
-  WS = 2601.72,
+  W = 63742.25,
+  WS = 2601.7244898,
   
-  P0eng = 200000,
-  P0 = 400000,
+  P0eng = 183000.1709616,
+  P0 = 366000.3419232,
   Etatotal = 0.80,
   alt_s = 0,
   

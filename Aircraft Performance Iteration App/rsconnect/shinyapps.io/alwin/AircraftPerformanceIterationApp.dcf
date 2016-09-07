@@ -2,9 +2,9 @@ name: AircraftPerformanceIterationApp
 account: alwin
 server: shinyapps.io
 appId: 121933
-bundleId: 543225
+bundleId: 547368
 url: https://alwin.shinyapps.io/AircraftPerformanceIterationApp/
-when: 1472456141.15187
+when: 1472789771.83337
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: Helper Main Functions (copy).R|Power.csv|Rough Iteration Attempt - Copy.R|Rough Iteration Attempt.R
+ignoredFiles: Data Ran Convergence Analysis.RData|Helper Iteration.R|Helper Main Functions (copy).R|IterationOut1123.RData|IterationOut87.RData|IterationOutLong1123.RData|IterationOutLong1296.RData|IterationOutLong87.RData|IterationOutLongSmall.RData|IterationOutLongSmall.rds|Power.csv|Rough Iteration Attempt - Copy.R|Rough Iteration Attempt For Loops.R|Rough Iteration Attempt.R|Rough Parallel Coordinates.R
