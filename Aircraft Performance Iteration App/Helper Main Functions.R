@@ -474,17 +474,20 @@ MainIterationFunction <- function(inputvals, specifications, resolution = 10, ou
     mutate(type = "Take-off Ground Roll",
            theta = 0,
            ClCd = Cl/Cd,
-           duration = 2*AreaDur/(Vinf + lag(Vinf, 1)), #<--- FUCKING WRONG
+           duration = 2*AreaDur/(Vinf + lag(Vinf, 1)),
            duration = ifelse(is.na(duration), 0, duration)) %>%
     mutate(t = cumsum(duration),
-           Eduration = 1/2 * (PA + lag(PA,1)) * duration,
+           #### FIX ####
+           TR = Ff + D, 
+           PR = TR * Vinf,
+           Eduration = 1/2 * (PR + lag(PR,1)) * duration,
            Eduration = ifelse(is.na(Eduration), 0, Eduration),
            Eeng = cumsum(Eduration),
            Wb100 = Eeng / 1e6,
            Rduration = AreaDur,
            Rduration = ifelse(is.na(Rduration), 0, Rduration),
            R = cumsum(Rduration),
-           Power = PA,
+           Power = PR,
            Drag = D) %>%
     select(type, h, rho, Vinf, Vstall, a, Clmax, Cl, Cd, ClCd, theta, t, Eeng, Wb100, R, duration, Eduration, Rduration, Power, Drag)
   # Transition
