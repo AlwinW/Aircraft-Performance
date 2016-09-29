@@ -48,8 +48,8 @@ parcoordlabel(testplot, col=rainbow(length(testplot[,1])))
 
 
 testplot <- filter(IterationOutLong, name == "Iteration", AR < 30, Clhls < 1, `Empty Weight` > 0.35, Cd0 > 0.015) %>% 
-  mutate(b = sqrt(S/AR))%>% 
-  select(m, S, WS, Clhls, AR, b, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`) %>%
+  mutate(c = sqrt(S/AR))%>% 
+  select(m, S, WS, Clhls, AR, c, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`) %>%
   mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet)
 parcoordlabel(testplot, col=rainbow(length(testplot[,1])))
 
@@ -68,44 +68,50 @@ parcoordlabel(testplot, col=rainbow(length(testplot[,1])))
 
 #--- FULL  3 DAY 1296 ITERATION
 testplot <- filter(IterationOutLong1296, name == "Iteration", AR < 30, Clhls < 1, `Empty Weight` > 0.35) %>% 
-  mutate(b = sqrt(S/AR), Cd0LightTwinMargin = SrefSwet * 0.0045 - Cd0)%>% 
-  dplyr::select(m, S, WS, Clhls, AR, b, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) %>%
+  mutate(c = sqrt(S/AR), Cd0LightTwinMargin = SrefSwet * 0.0045 - Cd0)%>% 
+  dplyr::select(m, S, WS, Clhls, AR, c, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) %>%
   mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet)
 parcoordlabel(testplot, col=rainbow(length(testplot[,1])))
 
 filterplot1296 <- filter(IterationOutLong1296, name == "Iteration") %>%
-  mutate(b = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0045) %>%
+  mutate(c = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0045) %>%
   filter(AR <= 30, Clhls <= 1, `Empty Weight` > 0.35, Cd0LightTwinMargin > -0.0002) %>%
   mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet) %>%
-  dplyr::select(m, S, AR, b, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
+  dplyr::select(m, S, AR, c, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
 
 parcoordlabel(filterplot1296, col=rainbow(nrow(filterplot1296)) )
 
 filterplot1296 <- filter(IterationOutLong1296, name == "Iteration") %>%
-  mutate(b = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0045) %>%
+  mutate(c = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0045) %>%
   filter(`Cruise near Vstar` > 70, AR <= 30, Clhls <= 1, `Empty Weight` > 0.35) %>%
   mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet) %>%
-  dplyr::select(m, WS, AR, b, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
+  dplyr::select(m, WS, AR, c, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
 
 parcoordlabel(filterplot1296, col=rainbow(nrow(filterplot1296)) )
 
 
 filterplotfocus<- filter(IterationOutLongFocus, name == "Iteration") %>%
-  mutate(b = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0030) %>%
+  mutate(c = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0030) %>%
   filter(AR <= 30, Clhls <= 1, `Empty Weight` > 0.35, e < 0.95) %>%
   mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet) %>%
-  dplyr::select(m, S, AR, b, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, Clhls, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
+  dplyr::select(m, S, AR, c, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, Clhls, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
 
 parcoordlabel(filterplotfocus, col=rainbow(nrow(filterplotfocus)) )
 
 
 filterplotfocus<- filter(IterationOutLongFocus, name == "Iteration") %>%
-  mutate(b = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0045) %>%
+  mutate(c = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0045) %>%
   filter(AR <= 25) %>%
   mutate(AR = -AR, P0eng = -P0eng, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet) %>%
-  dplyr::select(m, S, AR, b, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, Clhls, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
+  dplyr::select(m, S, AR, c, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, Clhls, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
 
 parcoordlabel(filterplotfocus, col=rainbow(nrow(filterplotfocus)) )
 
 
+filterplotCd0019<- filter(IterationOutLongCd0019, name == "Iteration") %>%
+  mutate(c = sqrt(S/AR), Cd0LightTwinMargin  = Cd0 - SrefSwet * 0.0045) %>%
+  filter(AR <= 25) %>%
+  mutate(AR = -AR, WS = -WS, Clhls = -Clhls, SrefSwet = -SrefSwet) %>%
+  dplyr::select(m, S, AR, c, `Cruise near Vstar`, `Cruise near Vstar`, P0eng, Clhls, e, SrefSwet, `Empty Weight`, Cd0LightTwinMargin, Cd0) 
 
+parcoordlabel(filterplotCd0019, col=rainbow(nrow(filterplotCd0019)) )

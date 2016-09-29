@@ -169,22 +169,22 @@ normto <- function(iv0) {
 
 ## Begin Calculations ======================================================================
 #--- Target
-target_We <- 0.45
+target_We <- 0.43
 #--- Manipulate the data into a meaningful form
 inp  <- t(specifications["Value"])
 colnames(inp) <- t(specifications["Variable"])
 inp <- cbind(inputvals, inp)
 
 #--- Variables to be applied
-var_m <- seq(6600, 6800, 100)
-var_e <- seq(0.85, 0.95, 0.05)
-var_Cd0 <-  seq(0.018, 0.020, 0.001)
-var_WS <-  seq(2100, 2300, 100)
+# var_m <- seq(6600, 6800, 100)
+# var_e <- seq(0.85, 0.95, 0.05)
+# var_Cd0 <-  seq(0.018, 0.020, 0.001)
+# var_WS <-  seq(2100, 2300, 100)
 
-  var_m = seq(6400, 6600, 50)
+  var_m = seq(6800, 7200, 100)
   var_e = 0.80
-  var_Cd0 = seq(0.015,0.018,0.001)
-  var_WS = seq(2400, 2700, 100)
+  var_Cd0 = 0.019
+  var_WS = 2781.6
 
 #--- Apply the variables and update the dataframe
 iterationvals <- inp %>%
